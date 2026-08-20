@@ -1002,15 +1002,7 @@ document.getElementById("btnToHome").onclick = () => {
 
 // Startscherm
 document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
-document.getElementById("btnMulti").onclick      = async () => {
-  // Snel Firebase-verbindingstest
-  try {
-    await get(ref(db, ".info/connected"));
-    navigate("lobby");
-  } catch(e) {
-    showToast("❌ Geen verbinding met Firebase. Controleer je internet of de Firebase-regels.", 5000);
-  }
-};
+document.getElementById("btnMulti").onclick = () => navigate("lobby");
 document.getElementById("btnLobbyBack").onclick  = () => navigate("home");
 document.getElementById("btnCreate").onclick     = createRoom;
 document.getElementById("btnJoin").onclick       = joinRoom;
