@@ -245,16 +245,35 @@
         <div class="title">Online multiplayer</div>
         <div class="desc">Elk op eigen gsm. Deel een kamercode, gooi samen dobbelstenen.</div>
       </button>
-      <button class="mode-card soon">
-        <div class="icon">🎯</div>
-        <div class="title">Solo</div>
-        <div class="desc">Speel alleen met virtuele dobbelstenen en beurtenlogica.</div>
-        <span class="badge">Binnenkort</span>
+      <button class="mode-card" id="btnSolo">
+        <div class="icon">🤖</div>
+        <div class="title">Solo vs bots</div>
+        <div class="desc">Speel tegen 2, 3 of 4 slimme bots. Jij gooit — bots beslissen automatisch.</div>
       </button>
     </div>
     <div id="savedNotice" style="display:none;color:var(--muted);font-size:.85rem;gap:8px;align-items:center">
       <span>📂 <b id="savedLabel"></b></span>
       <button class="btn" id="btnResume" style="padding:5px 10px;font-size:.8rem">Doorgaan →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SOLO SETUP ══ -->
+<div id="screen-solo" class="screen">
+  <div class="center-wrap">
+    <div class="lobby-wrap">
+      <button class="btn btn-muted" id="btnSoloBack">← Terug</button>
+      <h2 style="margin-top:16px">Solo vs bots 🤖</h2>
+      <p>Jij gooit de dobbelstenen, bots beslissen automatisch op basis van spelregels.</p>
+      <label class="field-label" for="soloName" style="margin-top:4px">Jouw naam</label>
+      <input id="soloName" class="name-input" type="text" placeholder="Naam" maxlength="20" autocomplete="off" style="margin-bottom:18px">
+      <span class="field-label">Hoeveel bots?</span>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;width:100%">
+        <button class="btn btn-primary" id="btnSolo2">2 bots</button>
+        <button class="btn btn-primary" id="btnSolo3">3 bots</button>
+        <button class="btn btn-primary" id="btnSolo4">4 bots</button>
+      </div>
+      <p style="color:var(--muted);font-size:.8rem;margin-top:12px;text-align:center">Bots krijgen willekeurige geluksgetallen — net als jij.</p>
     </div>
   </div>
 </div>
@@ -358,9 +377,9 @@
     </div>
     <div class="panel">
       <span class="field-label">Dobbelstenen – Qwixx Longo</span>
-      <p><b>⚪+⚪</b> = som in elke kleur (alle spelers)</p>
-      <p><b>⚪+kleur</b> = som in die kleur (alle spelers)</p>
-      <p><b>⚪+⚪+kleur</b> = som in die kleur (alleen actieve speler)</p>
+      <p><b>⚪+⚪</b> = som in elke kleur (alle spelers, witfase)</p>
+      <p><b>⚪+kleur</b> = w1+kleur of w2+kleur (alleen actieve speler, kleurfase)</p>
+      <p><b>⭐ Geluksgetal</b> = als ⚪+⚪ jouw geluksgetal is, mag je ook 1 bonus kruis in je minste rij zetten.</p>
       <p>Actieve speler <b>moet</b> minstens iets invullen of strafpunt nemen.</p>
     </div>
   </section>
@@ -403,9 +422,11 @@ const P_COLORS = ["#dc2626","#2563eb","#16a34a","#ca8a04"];
 
 // ── Sessie-state ─────────────────────────────────────────────────────────────
 let playerId   = localStorage.getItem(PLAYER_ID_KEY) || ("p_" + Math.random().toString(36).slice(2,10));
-let currentMode = null; // 'scoreblad' | 'multi'
+let currentMode = null; // 'scoreblad' | 'multi' | 'solo'
 let roomCode   = null;
-let roomData   = null;  // live van Firebase
+let roomData   = null;  // live van Firebase (multi) of soloRoom alias (solo)
+let soloRoom   = null;  // lokale game state voor solo modus
+let soloBotCount = 0;   // aantal bots in huidig solo spel
 let roomUnsubscribe = null;
 
 // Scoreblad-modus
@@ -722,7 +743,7 @@ function setupGameScreen(isMulti) {
 
 // ── Dobbelstenen ──────────────────────────────────────────────────────────────
 function amIActive() {
-  return currentMode === "multi" && roomData?.activePlayerId === playerId;
+  return (currentMode === "multi" || currentMode === "solo") && roomData?.activePlayerId === playerId;
 }
 
 async function rollDice() {
@@ -730,11 +751,22 @@ async function rollDice() {
   if (roomData?.dicePhase !== "rolling") { showToast("Dobbelstenen zijn al gegooid."); return; }
   const btn = document.getElementById("btnRoll");
   btn.disabled = true;
+  const roll = () => Math.floor(Math.random()*6)+1;
+  const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
+  document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
+
+  if (currentMode === "solo") {
+    soloRoom.dice      = dice;
+    soloRoom.dicePhase = "whites";
+    soloRoom.whitesDone = {};
+    roomData = soloRoom;
+    render();
+    scheduleBotWhitesDecisions();
+    return;
+  }
+
   try {
-    const roll = () => Math.floor(Math.random()*6)+1;
-    const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
-    document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
-    // Stel dobbelstenen en fase tegelijk in (witfase begint voor iedereen)
+    // Multiplayer: stel dobbelstenen en fase tegelijk in (witfase begint voor iedereen)
     await update(ref(db, `rooms/${roomCode}`), { dice, dicePhase:"whites" });
   } catch(e) {
     console.error("rollDice:", e);
@@ -748,6 +780,16 @@ async function skipWhiteDice() {
   if (roomData?.dicePhase !== "whites") return;
   if (madeWhiteDecision) return;
   madeWhiteDecision = true;
+
+  if (currentMode === "solo") {
+    soloRoom.whitesDone = soloRoom.whitesDone || {};
+    soloRoom.whitesDone[playerId] = true;
+    roomData = soloRoom;
+    render();
+    soloCheckAndAdvanceWhites();
+    return;
+  }
+
   try {
     await set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true);
   } catch(e) {
@@ -757,7 +799,7 @@ async function skipWhiteDice() {
 }
 
 function renderDice() {
-  if (currentMode !== "multi" || !roomData) return;
+  if ((currentMode !== "multi" && currentMode !== "solo") || !roomData) return;
   const dice       = roomData.dice || {};
   const phase      = roomData.dicePhase || "rolling";
   const isActive   = amIActive();
@@ -875,7 +917,7 @@ function addCombo(parent, text, cls) {
 
 // ── Turn bar ──────────────────────────────────────────────────────────────────
 function renderTurnBar() {
-  if (currentMode !== "multi" || !roomData) return;
+  if ((currentMode !== "multi" && currentMode !== "solo") || !roomData) return;
   const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
   const activeId = roomData.activePlayerId;
   const activeIdx = players.findIndex(([pid])=>pid===activeId);
@@ -924,6 +966,13 @@ async function passToNext() {
     }
   }
 
+  // ── Solo modus: lokale state bijwerken ─────────────────────────────────────
+  if (currentMode === "solo") {
+    soloPassToNext();
+    return;
+  }
+
+  // ── Multiplayer: Firebase bijwerken ───────────────────────────────────────
   const btn = document.getElementById("passBtn");
   btn.disabled = true;
   try {
@@ -972,7 +1021,7 @@ function renderEndGame() {
 function getValidNumbers(colorId) {
   // null  → scoreblad-modus, geen beperking
   // Set   → multiplayer, alleen deze waarden zijn geldig (lege Set = niets geldig)
-  if (currentMode !== "multi") return null;
+  if (currentMode !== "multi" && currentMode !== "solo") return null;
   const phase = roomData?.dicePhase || "rolling";
   const d     = roomData?.dice || {};
   if (!d.rolled || phase === "rolling") return new Set(); // niets mag nog
@@ -1005,14 +1054,15 @@ function checkTurnReset() {
 
 // ── Geluksgetallen ─────────────────────────────────────────────────────────────
 function getMyLuckyNumbers() {
-  if (currentMode === "multi" && roomData?.luckyNumbers?.[playerId]) {
+  if ((currentMode === "multi" || currentMode === "solo") && roomData?.luckyNumbers?.[playerId]) {
     return roomData.luckyNumbers[playerId];
   }
   return state.lucky || [];
 }
 
 function isLuckyWhiteRoll() {
-  if (currentMode !== "multi" || !roomData?.dice?.rolled) return false;
+  if (currentMode !== "multi" && currentMode !== "solo") return false;
+  if (!roomData?.dice?.rolled) return false;
   const ww = (roomData.dice.w1 || 0) + (roomData.dice.w2 || 0);
   return getMyLuckyNumbers().some(n => n === ww);
 }
@@ -1055,11 +1105,19 @@ async function applyLuckyBonus() {
   markedThisTurn.push(bestColorId);
   if (!madeWhiteDecision) {
     madeWhiteDecision = true;
-    set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+    if (currentMode === "multi") {
+      set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+    } else if (currentMode === "solo") {
+      soloRoom.whitesDone = soloRoom.whitesDone || {};
+      soloRoom.whitesDone[playerId] = true;
+      soloRoom.players[playerId].state = clone(state);
+      roomData = soloRoom;
+    }
   }
   saveState();
   render();
   showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === bestColorId).name}!`);
+  if (currentMode === "solo") soloCheckAndAdvanceWhites();
 }
 
 // ── Scoreblad: nummers aanvinken ───────────────────────────────────────────────
@@ -1071,8 +1129,8 @@ function markNumber(colorId, index) {
   if (index<=latestProg(row)) { showToast("Je kunt alleen naar rechts."); return; }
   if (index>=13 && crossedCount(row)<6) { showToast("Je hebt eerst 6 kruisjes nodig voor de laatste twee."); return; }
 
-  // ── Multiplayer spelregelcontrole ──────────────────────────────────────────
-  if (currentMode === "multi") {
+  // ── Spelregelcontrole (multi + solo) ──────────────────────────────────────
+  if (currentMode === "multi" || currentMode === "solo") {
     checkTurnReset();
     const phase  = roomData?.dicePhase || "rolling";
     const color  = COLORS.find(c => c.id === colorId);
@@ -1119,13 +1177,18 @@ function markNumber(colorId, index) {
   row.cells[index]="cross";
 
   // Beurt-administratie bijhouden
-  if (currentMode === "multi") {
+  if (currentMode === "multi" || currentMode === "solo") {
     const phase = roomData?.dicePhase || "rolling";
     if (phase === "whites") {
       markedThisTurn.push(colorId);
       if (!madeWhiteDecision) {
         madeWhiteDecision = true;
-        set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+        if (currentMode === "multi") {
+          set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+        } else if (currentMode === "solo") {
+          soloRoom.whitesDone = soloRoom.whitesDone || {};
+          soloRoom.whitesDone[playerId] = true;
+        }
       }
     } else if (phase === "colors") {
       markedThisTurn.push("color:" + colorId);
@@ -1137,14 +1200,26 @@ function markNumber(colorId, index) {
     for(let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
     if (currentMode==="multi") {
       set(ref(db,`rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy:playerId }).catch(console.error);
+    } else if (currentMode === "solo") {
+      soloRoom.globalLocks = soloRoom.globalLocks || {};
+      soloRoom.globalLocks[colorId] = { lockedBy: playerId };
     }
     showToast("Rij gesloten! Het slot telt mee als extra kruis.");
   }
   saveState();
   render();
 
-  // Auto-doorgeven na kleurfase (actieve speler heeft gekozen)
-  if (currentMode === "multi" && roomData?.dicePhase === "colors" && amIActive()) {
+  // Solo: sync state en check witfase; anders auto-doorgeven na kleurfase
+  if (currentMode === "solo") {
+    const phase = roomData?.dicePhase || "rolling";
+    soloRoom.players[playerId].state = clone(state);
+    roomData = soloRoom;
+    if (phase === "whites") {
+      soloCheckAndAdvanceWhites();
+    } else if (phase === "colors" && amIActive()) {
+      setTimeout(() => passToNext(), 350);
+    }
+  } else if (currentMode === "multi" && roomData?.dicePhase === "colors" && amIActive()) {
     setTimeout(() => passToNext(), 350);
   }
 }
@@ -1162,6 +1237,9 @@ function toggleExternalLock(colorId) {
 function saveState() {
   if (currentMode==="scoreblad") {
     saveScoreblad();
+  } else if (currentMode==="solo" && soloRoom) {
+    soloRoom.players[playerId].state = clone(state);
+    roomData = soloRoom;
   } else if (currentMode==="multi" && roomCode) {
     set(ref(db,`rooms/${roomCode}/players/${playerId}/state`), state).catch(e=>{
       console.error("saveState:", e);
@@ -1252,7 +1330,7 @@ function renderSummary() {
   }
   document.getElementById("undoBtn").disabled = history.length===0;
   // Pass-knop: alleen actief in kleurfase voor actieve speler
-  if (currentMode==="multi") {
+  if (currentMode==="multi" || currentMode==="solo") {
     const pb    = document.getElementById("passBtn");
     const phase = roomData?.dicePhase || "rolling";
     const myTurn = amIActive();
@@ -1270,7 +1348,271 @@ function render() {
   renderRows();
   renderPenalties();
   renderSummary();
-  if (currentMode==="multi") { renderDice(); renderTurnBar(); }
+  if (currentMode==="multi" || currentMode==="solo") { renderDice(); renderTurnBar(); }
+}
+
+// ── Solo modus ────────────────────────────────────────────────────────────────
+const BOT_NAMES = ["Bot Rood 🤖","Bot Blauw 🤖","Bot Groen 🤖","Bot Geel 🤖"];
+
+function setupSoloGame(numBots) {
+  soloBotCount = numBots;
+  const name = document.getElementById("soloName").value.trim() || state.playerName || "Jij";
+  state = freshState(name);
+
+  // Spelers aanmaken
+  const players = {};
+  players[playerId] = { name, order: 0, state: clone(state) };
+  for (let i = 1; i <= numBots; i++) {
+    const botId = `bot_${i}`;
+    const botName = BOT_NAMES[i-1] || `Bot ${i} 🤖`;
+    players[botId] = { name: botName, order: i, state: freshState(botName), isBot: true };
+  }
+
+  // Willekeurige geluksgetallen per speler
+  const luckyNumbers = {};
+  Object.keys(players).forEach(pid => {
+    const n1 = Math.floor(Math.random()*11)+2;
+    let n2; do { n2 = Math.floor(Math.random()*11)+2; } while (n2===n1);
+    luckyNumbers[pid] = [n1, n2];
+  });
+
+  soloRoom = {
+    players,
+    activePlayerId: playerId, // menselijke speler begint
+    turnNumber: 1,
+    dicePhase: "rolling",
+    dice: { rolled: false },
+    whitesDone: {},
+    luckyNumbers,
+    globalLocks: {},
+    status: "playing",
+    hostId: playerId
+  };
+  roomData = soloRoom;
+  roomCode = "SOLO";
+
+  currentMode = "solo";
+  currentTurnNumber = 1;
+  markedThisTurn    = [];
+  madeWhiteDecision = false;
+
+  setupGameScreen(true);
+  navigate("game");
+  render();
+  showToast(`🎲 Solo gestart! Jouw geluksgetallen: ⭐${luckyNumbers[playerId].join(" & ")}`, 3500);
+}
+
+// Bots beslissen voor de witfase (staggered delays)
+function scheduleBotWhitesDecisions() {
+  const botIds = Object.keys(soloRoom.players).filter(pid => soloRoom.players[pid].isBot);
+  botIds.forEach((botId, i) => {
+    setTimeout(() => {
+      if (currentMode !== "solo" || soloRoom.dicePhase !== "whites") return;
+      botDecideWhites(botId);
+      soloRoom.players[botId].state = soloRoom.players[botId].state; // reref
+      roomData = soloRoom;
+      render();
+      soloCheckAndAdvanceWhites();
+    }, 700 + i * 350 + Math.random() * 300);
+  });
+}
+
+// Bot beslist over de witsom
+function botDecideWhites(botId) {
+  const d = soloRoom.dice;
+  const ww = d.w1 + d.w2;
+  const botState = soloRoom.players[botId].state;
+  const lucky = soloRoom.luckyNumbers?.[botId] || [];
+
+  // Lucky number: 55% kans om geluksbonus te gebruiken
+  if (lucky.includes(ww) && Math.random() < 0.55) {
+    botApplyLuckyBonusInternal(botId, botState);
+    soloRoom.whitesDone[botId] = true;
+    return;
+  }
+
+  // Probeer de witsom te plaatsen in een beschikbare rij
+  const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
+  for (const color of shuffled) {
+    const row = botState.rows[color.id];
+    if (row.lock !== "open") continue;
+    const numIdx = color.nums.indexOf(ww);
+    if (numIdx < 0) continue;
+    if (numIdx <= latestProg(row)) continue;
+    if (numIdx >= 13 && crossedCount(row) < 6) continue;
+    // Niet te veel cellen overslaan (max 4 tenzij lucky shot)
+    const skips = numIdx - latestProg(row) - 1;
+    if (skips > 4 && Math.random() > 0.25) continue;
+    // Markeer het vakje
+    for (let i = 0; i < numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+    row.cells[numIdx] = "cross";
+    if (numIdx >= 13) {
+      row.lock = "own";
+      for (let i = numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+      soloRoom.globalLocks[color.id] = { lockedBy: botId };
+    }
+    break;
+  }
+  soloRoom.whitesDone[botId] = true;
+}
+
+// Geluksbonus voor een bot (intern)
+function botApplyLuckyBonusInternal(botId, botState) {
+  let minCrosses = Infinity, bestColorId = null, bestIndex = -1;
+  COLORS.forEach(c => {
+    const row = botState.rows[c.id];
+    if (row.lock !== "open") return;
+    const count = crossedCount(row);
+    if (count >= minCrosses) return;
+    const lastP = latestProg(row);
+    for (let i = lastP + 1; i < row.cells.length; i++) {
+      if (row.cells[i] === "open" && (i < 13 || count >= 6)) {
+        minCrosses = count; bestColorId = c.id; bestIndex = i;
+        break;
+      }
+    }
+  });
+  if (bestColorId !== null && bestIndex >= 0) {
+    const row = botState.rows[bestColorId];
+    for (let i = 0; i < bestIndex; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+    row.cells[bestIndex] = "cross";
+    if (bestIndex >= 13) {
+      row.lock = "own";
+      for (let i = bestIndex + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+      soloRoom.globalLocks[bestColorId] = { lockedBy: botId };
+    }
+  }
+}
+
+// Bot beslist over de kleurfase (actieve bot)
+function botDecideColors(botId) {
+  const d = soloRoom.dice;
+  const botState = soloRoom.players[botId].state;
+  const options  = [];
+  COLORS.forEach(c => {
+    [d.w1 + d[c.id], d.w2 + d[c.id]].forEach(v => {
+      if (v < 2 || v > 18) return;
+      const numIdx = c.nums.indexOf(v);
+      if (numIdx < 0) return;
+      const row = botState.rows[c.id];
+      if (row.lock !== "open") return;
+      if (numIdx <= latestProg(row)) return;
+      if (numIdx >= 13 && crossedCount(row) < 6) return;
+      const skips = numIdx - latestProg(row) - 1;
+      options.push({ colorId: c.id, numIdx, skips });
+    });
+  });
+  if (!options.length) return; // bot slaat kleur over
+  // Voorkeur: minst cellen overslaan
+  options.sort((a,b) => a.skips - b.skips);
+  const pick = options[0];
+  const row = botState.rows[pick.colorId];
+  for (let i = 0; i < pick.numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+  row.cells[pick.numIdx] = "cross";
+  if (pick.numIdx >= 13) {
+    row.lock = "own";
+    for (let i = pick.numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+    soloRoom.globalLocks[pick.colorId] = { lockedBy: botId };
+    showToast(`🤖 ${soloRoom.players[botId].name.split(" ")[0]} sluit ${COLORS.find(c=>c.id===pick.colorId).name}!`);
+  }
+}
+
+// Controleer of alle spelers in witfase beslist hebben
+function soloCheckAndAdvanceWhites() {
+  if (!soloRoom || soloRoom.dicePhase !== "whites") return;
+  const allPids  = Object.keys(soloRoom.players);
+  const donePids = Object.keys(soloRoom.whitesDone || {});
+  if (allPids.length > 0 && allPids.every(pid => donePids.includes(pid))) {
+    soloAdvanceToColors();
+  }
+}
+
+// Ga naar kleurfase (of direct door als actieve speler een bot is)
+function soloAdvanceToColors() {
+  soloRoom.dicePhase = "colors";
+  roomData = soloRoom;
+  render();
+
+  const activeId = soloRoom.activePlayerId;
+  if (soloRoom.players[activeId]?.isBot) {
+    // Bot beslist kleurfase na korte pauze
+    setTimeout(() => {
+      if (currentMode !== "solo" || soloRoom.dicePhase !== "colors") return;
+      botDecideColors(activeId);
+      roomData = soloRoom;
+      render();
+      setTimeout(() => soloPassToNext(), 500);
+    }, 700 + Math.random() * 500);
+  }
+}
+
+// Lokale beurt doorgeven (solo modus)
+function soloPassToNext() {
+  if (!soloRoom) return;
+  // Sync menselijke state
+  soloRoom.players[playerId].state = clone(state);
+
+  // Speleinde controleren
+  const players = Object.entries(soloRoom.players).sort((a,b)=>a[1].order-b[1].order);
+  const locks   = Object.values(soloRoom.globalLocks||{}).filter(v=>v!=null).length;
+  const anyMaxP = players.some(([,p])=>(p.state?.penalties||[]).filter(Boolean).length>=4);
+  if (locks >= 2 || anyMaxP) {
+    soloRoom.status = "ended";
+    roomData = soloRoom;
+    render();
+    renderEndGame();
+    return;
+  }
+
+  // Volgende speler
+  const myIdx  = players.findIndex(([pid])=>pid===soloRoom.activePlayerId);
+  const nextIdx = (myIdx + 1) % players.length;
+  const nextId  = players[nextIdx][0];
+
+  soloRoom.activePlayerId = nextId;
+  soloRoom.turnNumber     = (soloRoom.turnNumber || 1) + 1;
+  soloRoom.dicePhase      = "rolling";
+  soloRoom.whitesDone     = {};
+  soloRoom.dice           = { rolled: false };
+
+  currentTurnNumber = soloRoom.turnNumber;
+  markedThisTurn    = [];
+  madeWhiteDecision = false;
+
+  roomData = soloRoom;
+  render();
+
+  // Als volgende speler een bot is, speelt die automatisch
+  if (soloRoom.players[nextId]?.isBot) {
+    scheduleBotActiveTurn(nextId);
+  }
+}
+
+// Bot is actieve speler: gooit dobbelstenen en speelt volledige beurt
+function scheduleBotActiveTurn(botId) {
+  // Stap 1: Bot gooit dobbelstenen
+  setTimeout(() => {
+    if (currentMode !== "solo" || soloRoom.status !== "playing") return;
+    if (soloRoom.activePlayerId !== botId) return;
+    const roll = () => Math.floor(Math.random()*6)+1;
+    soloRoom.dice      = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
+    soloRoom.dicePhase = "whites";
+    soloRoom.whitesDone = {};
+    roomData = soloRoom;
+    render();
+
+    // Stap 2: Alle bots beslissen witfase (inclusief actieve bot); mens kan ook beslissen
+    const botIds = Object.keys(soloRoom.players).filter(pid => soloRoom.players[pid].isBot);
+    botIds.forEach((bid, i) => {
+      setTimeout(() => {
+        if (currentMode !== "solo" || soloRoom.dicePhase !== "whites") return;
+        botDecideWhites(bid);
+        roomData = soloRoom;
+        render();
+        soloCheckAndAdvanceWhites();
+      }, 400 + i * 300 + Math.random() * 250);
+    });
+  }, 900 + Math.random() * 600);
 }
 
 // ── Invoer ────────────────────────────────────────────────────────────────────
@@ -1292,6 +1634,10 @@ document.getElementById("undoBtn").onclick = () => {
 document.getElementById("passBtn").onclick  = passToNext;
 document.getElementById("btnRoll").onclick  = rollDice;
 document.getElementById("resetBtn").onclick = () => {
+  if (currentMode === "solo") {
+    if (!confirm("Solo spel opnieuw starten?")) return;
+    setupSoloGame(soloBotCount); return;
+  }
   if (!confirm("Dit scoreblad wissen?")) return;
   checkpoint(); state=freshState(state.playerName); saveState(); render();
 };
@@ -1300,12 +1646,25 @@ document.getElementById("btnToHome").onclick = () => {
     if (!confirm("Verlaat het huidige spel?")) return;
     leaveRoom(); return;
   }
+  if (currentMode==="solo") {
+    if (!confirm("Solo spel verlaten?")) return;
+    soloRoom = null; roomData = null; roomCode = null; currentMode = null;
+    navigate("home"); return;
+  }
   saveScoreblad(); navigate("home"); initHome();
 };
 
 // Startscherm
 document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
 document.getElementById("btnMulti").onclick = () => navigate("lobby");
+document.getElementById("btnSolo").onclick  = () => {
+  document.getElementById("soloName").value = state.playerName || "";
+  navigate("solo");
+};
+document.getElementById("btnSoloBack").onclick = () => navigate("home");
+document.getElementById("btnSolo2").onclick = () => setupSoloGame(2);
+document.getElementById("btnSolo3").onclick = () => setupSoloGame(3);
+document.getElementById("btnSolo4").onclick = () => setupSoloGame(4);
 document.getElementById("btnLobbyBack").onclick  = () => navigate("home");
 document.getElementById("btnCreate").onclick     = createRoom;
 document.getElementById("btnJoin").onclick       = joinRoom;
