@@ -22,115 +22,102 @@
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--ink);
       font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
-    body{min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+    body{min-height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
     button,input{font:inherit}
     button{touch-action:manipulation}
 
-    /* ── Schermen ── */
+    /* Schermen */
     .screen{display:none;width:min(1180px,100%);margin:0 auto;padding:14px}
     .screen.active{display:block}
 
-    /* ── Startscherm ── */
-    .home-wrap{
-      display:flex;flex-direction:column;align-items:center;
-      justify-content:center;min-height:100dvh;gap:28px;padding:20px
-    }
-    .home-brand{text-align:center}
-    .home-brand h1{margin:0 0 4px;font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.04em}
-    .home-brand p{margin:0;color:var(--muted);font-size:.95rem}
-    .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;width:min(680px,100%)}
-    .mode-card{
-      background:var(--card);border:2px solid #e5e7eb;border-radius:var(--radius);
-      padding:22px 18px;text-align:left;cursor:pointer;transition:border-color .15s,transform .1s;
-      display:flex;flex-direction:column;gap:6px;position:relative;
-    }
+    /* Centreer-hulp */
+    .center-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;gap:22px;padding:20px}
+
+    /* Startscherm */
+    .home-brand h1{margin:0 0 4px;font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.04em;text-align:center}
+    .home-brand p{margin:0;color:var(--muted);font-size:.93rem;text-align:center}
+    .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;width:min(640px,100%)}
+    .mode-card{background:var(--card);border:2px solid #e5e7eb;border-radius:var(--radius);padding:20px 16px;text-align:left;cursor:pointer;transition:border-color .15s,transform .1s;display:flex;flex-direction:column;gap:5px;position:relative}
     .mode-card:hover{border-color:#9ca3af;transform:translateY(-2px)}
     .mode-card:active{transform:scale(.98)}
-    .mode-card .mode-icon{font-size:2rem;line-height:1;margin-bottom:2px}
-    .mode-card .mode-title{font-size:1.15rem;font-weight:900;letter-spacing:-.02em}
-    .mode-card .mode-desc{color:var(--muted);font-size:.86rem;line-height:1.45}
-    .mode-card .badge{
-      position:absolute;top:12px;right:12px;background:#f59e0b;color:#fff;
-      font-size:.65rem;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.03em
-    }
-    .mode-card.disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
-    .saved-notice{
-      background:var(--card);border:1px solid #e5e7eb;border-radius:10px;
-      padding:10px 16px;font-size:.85rem;color:var(--muted);display:flex;gap:10px;align-items:center;
-      width:min(680px,100%)
-    }
-    .saved-notice b{color:var(--ink)}
-    .saved-notice button{margin-left:auto;background:none;border:1px solid #d1d5db;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.8rem;font-weight:700}
+    .mode-card .icon{font-size:1.9rem;margin-bottom:2px}
+    .mode-card .title{font-size:1.1rem;font-weight:900;letter-spacing:-.02em}
+    .mode-card .desc{color:var(--muted);font-size:.84rem;line-height:1.45}
+    .mode-card .badge{position:absolute;top:10px;right:10px;background:#f59e0b;color:#fff;font-size:.62rem;font-weight:800;padding:2px 7px;border-radius:999px}
+    .mode-card.soon{opacity:.55;cursor:not-allowed;pointer-events:none}
 
-    /* ── Multiplayer setup ── */
-    .setup-wrap{max-width:460px;margin:0 auto;padding-top:24px}
-    .setup-wrap h2{font-size:1.4rem;font-weight:900;margin:0 0 4px}
-    .setup-wrap p{color:var(--muted);font-size:.9rem;margin:0 0 18px}
-    .player-count-row{display:flex;gap:8px;margin-bottom:18px}
-    .count-btn{
-      flex:1;padding:10px 0;border:2px solid #d1d5db;border-radius:10px;
-      background:#fff;font-weight:800;font-size:1rem;cursor:pointer
-    }
-    .count-btn.active{border-color:var(--ink);background:var(--ink);color:#fff}
-    .player-inputs{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
-    .player-input-row{display:flex;align-items:center;gap:10px}
-    .player-num{
-      width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
-      justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;color:#fff
-    }
-    .p-color-0{background:var(--red)}
-    .p-color-1{background:var(--blue)}
-    .p-color-2{background:var(--green)}
-    .p-color-3{background:var(--yellow)}
+    /* Lobby */
+    .lobby-wrap{width:min(420px,100%)}
+    .lobby-wrap h2{font-size:1.35rem;font-weight:900;margin:0 0 4px}
+    .lobby-wrap p{color:var(--muted);font-size:.88rem;margin:0 0 16px}
+    .room-input{width:100%;border:1px solid #d1d5db;border-radius:10px;padding:11px 14px;font-size:1.1rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;outline:none;text-align:center}
+    .room-input:focus{border-color:#9ca3af;box-shadow:0 0 0 3px rgba(17,24,39,.06)}
+    .sep{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.82rem;margin:16px 0}
+    .sep::before,.sep::after{content:"";flex:1;height:1px;background:#e5e7eb}
 
-    /* ── Handoff scherm ── */
-    .handoff-wrap{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      min-height:100dvh;gap:20px;text-align:center;padding:24px
-    }
-    .handoff-avatar{
-      width:80px;height:80px;border-radius:50%;display:flex;align-items:center;
-      justify-content:center;font-size:2.2rem;font-weight:900;color:#fff;margin-bottom:4px
-    }
-    .handoff-wrap h2{font-size:1.8rem;font-weight:900;margin:0;letter-spacing:-.03em}
-    .handoff-wrap p{color:var(--muted);font-size:.95rem;margin:0}
+    /* Wachtkamer */
+    .room-code-big{font-size:3.5rem;font-weight:900;letter-spacing:.18em;color:var(--ink);text-align:center;line-height:1}
+    .room-code-label{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);text-align:center}
+    .player-list{width:min(380px,100%);display:flex;flex-direction:column;gap:7px}
+    .player-list-item{background:var(--card);border:1px solid #e5e7eb;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;font-weight:700}
+    .player-list-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+    .player-list-host{margin-left:auto;font-size:.72rem;color:var(--muted);font-weight:700}
+    .waiting-hint{color:var(--muted);font-size:.85rem;text-align:center}
 
-    /* ── Spel: speler-indicator (multiplayer) ── */
-    .player-bar{
-      display:flex;align-items:center;gap:12px;
-      background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);
-      padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)
-    }
-    .player-bar-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-    .player-bar-name{font-weight:900;font-size:1rem;flex:1}
-    .player-bar-sub{color:var(--muted);font-size:.82rem}
-    .player-bar-scores{display:flex;gap:12px;font-size:.82rem;font-weight:700;color:var(--muted)}
-    .player-bar-scores span{color:var(--ink)}
+    /* Dobbelstenen */
+    .dice-area{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);margin-bottom:10px}
+    .dice-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+    .die{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:900;flex-shrink:0;transition:transform .15s}
+    .die.white{background:#e5e7eb;color:var(--ink)}
+    .die.c-red{background:var(--red);color:#fff}
+    .die.c-yellow{background:var(--yellow);color:#fff}
+    .die.c-green{background:var(--green);color:#fff}
+    .die.c-blue{background:var(--blue);color:#fff}
+    .die.empty{background:#f3f4f6;border:2px dashed #d1d5db;color:#9ca3af;font-size:1rem}
+    .die.rolling{animation:roll .5s ease}
+    @keyframes roll{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.15)}100%{transform:rotate(360deg) scale(1)}}
+    .combos{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .combo{border-radius:8px;padding:4px 10px;font-size:.8rem;font-weight:700;background:#f3f4f6;border:1px solid #e5e7eb}
+    .combo.for-all{border-color:#9ca3af}
+    .combo.active-extra{border-color:var(--green);color:var(--green)}
+    .dice-meta{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .turn-label{font-size:.82rem;font-weight:800;color:var(--muted)}
+    .turn-label b{color:var(--ink)}
 
-    /* ── Scoreblad UI ── */
+    /* Turn indicator balk */
+    .turn-bar{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:9px 14px;box-shadow:var(--shadow);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+    .turn-dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
+    .turn-info{flex:1}
+    .turn-name{font-weight:900;font-size:.95rem}
+    .turn-sub{font-size:.78rem;color:var(--muted)}
+    .turn-scores{display:flex;gap:10px;font-size:.78rem;font-weight:700;color:var(--muted);flex-wrap:wrap}
+    .turn-scores .me{color:var(--ink);font-weight:900}
+    .room-code-small{font-size:.7rem;font-weight:800;letter-spacing:.08em;color:var(--muted);padding:4px 8px;background:#f3f4f6;border-radius:6px;white-space:nowrap}
+
+    /* Scoreblad UI */
     .rows{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
     .row-card{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
     .row-head{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px}
     .row-title{display:flex;align-items:center;gap:9px;font-weight:900;font-size:1.05rem}
-    .dot{width:13px;height:13px;border-radius:999px;display:inline-block;flex-shrink:0}
+    .dot{width:13px;height:13px;border-radius:50%;display:inline-block;flex-shrink:0}
     .row-meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.88rem;font-weight:700}
     .row-score{color:var(--ink)}
-    .external-lock{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:800;cursor:pointer;color:var(--muted);flex-shrink:0}
-    .external-lock.active{background:#111827;color:#fff;border-color:#111827}
+    .ext-lock{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:800;cursor:pointer;color:var(--muted);flex-shrink:0}
+    .ext-lock.active{background:#111827;color:#fff;border-color:#111827}
     .number-grid{display:grid;grid-template-columns:repeat(16,minmax(42px,1fr));gap:5px;overflow-x:auto;padding-bottom:2px}
-    .num{aspect-ratio:1/1;min-width:42px;border:2px solid var(--row-color);border-radius:10px;background:#fff;color:var(--row-color);font-weight:900;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;user-select:none;transition:transform .08s ease,background .15s ease,color .15s ease,opacity .15s ease}
+    .num{aspect-ratio:1/1;min-width:42px;border:2px solid var(--row-color);border-radius:10px;background:#fff;color:var(--row-color);font-weight:900;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;user-select:none;transition:transform .08s,background .15s,color .15s,opacity .15s}
     .num:active{transform:scale(.93)}
     .num.crossed{background:var(--row-color);color:#fff}
     .num.crossed::after{content:"×";position:absolute;font-size:1.8rem;line-height:1;color:#fff;font-weight:900}
     .num.crossed span{opacity:.28}
-    .num.skipped{opacity:.38;background:#f9fafb;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed}
+    .num.skipped{opacity:.35;background:#f9fafb;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed}
     .num.skipped::after{content:"";position:absolute;width:68%;height:2px;background:#9ca3af;transform:rotate(-12deg)}
-    .num.locked-out{opacity:.25;background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed}
+    .num.locked-out{opacity:.22;background:#f3f4f6;color:#9ca3af;border-color:#e5e7eb;cursor:not-allowed}
     .num.lock{border-style:dashed;background:#f9fafb;color:#111827;border-color:#9ca3af;font-size:1.1rem}
     .num.lock.own{background:#111827;color:#fff;border-color:#111827;border-style:solid}
     .num.lock.external{background:#6b7280;color:#fff;border-color:#6b7280;border-style:solid}
 
-    /* ── Onderste balk ── */
+    /* Onderste balk */
     .bottom-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:start;background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
     .field-label{display:block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
     .penalties{display:flex;gap:7px}
@@ -153,39 +140,42 @@
     .game-status.ended{color:var(--danger);font-weight:800}
     .action-wrap{display:flex;flex-direction:column;gap:7px}
 
-    /* ── Knoppen ── */
+    /* Knoppen */
     .btn{border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:.9rem;text-align:center}
     .btn:hover{background:#f9fafb}
     .btn:active{transform:scale(.97)}
-    .btn:disabled{opacity:.40;cursor:not-allowed}
+    .btn:disabled{opacity:.35;cursor:not-allowed}
     .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
     .btn-primary:hover{background:#374151}
+    .btn-green{background:var(--green);color:#fff;border-color:var(--green)}
+    .btn-green:hover{background:#15803d}
     .btn-danger{color:var(--danger)}
-    .btn-pass{background:#16a34a;color:#fff;border-color:#16a34a;font-size:1rem;padding:12px 18px}
+    .btn-muted{color:var(--muted);font-size:.82rem}
+    .btn-roll{background:var(--ink);color:#fff;border-color:var(--ink);font-size:1rem;padding:10px 18px}
+    .btn-roll:hover{background:#374151}
+    .btn-pass{background:var(--green);color:#fff;border-color:var(--green);font-size:1rem;padding:12px 18px}
     .btn-pass:hover{background:#15803d}
     .btn-ios-fs{color:#2563eb;border-color:#bfdbfe;background:#eff6ff}
-    .btn-ios-fs:hover{background:#dbeafe}
-    .btn-home{color:var(--muted);font-size:.82rem}
 
-    /* ── Legenda ── */
+    /* Legenda */
     .legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
     .panel{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
     .legend p{margin:.2rem 0;color:var(--muted);font-size:.85rem;line-height:1.5}
     .legend b{color:var(--ink)}
     .footer{color:var(--muted);font-size:.72rem;text-align:center;padding:8px 6px 12px}
 
-    /* ── Toast ── */
-    .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:11px 16px;border-radius:10px;font-weight:800;opacity:0;pointer-events:none;transition:.2s ease;z-index:99;box-shadow:var(--shadow);max-width:min(90vw,560px);text-align:center;font-size:.95rem}
+    /* Toast */
+    .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:11px 16px;border-radius:10px;font-weight:800;opacity:0;pointer-events:none;transition:.2s ease;z-index:99;box-shadow:var(--shadow);max-width:min(90vw,560px);text-align:center;font-size:.93rem}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-    /* ── Responsive ── */
-    @media (max-width:900px){
+    /* Responsive */
+    @media(max-width:900px){
       .bottom-bar{grid-template-columns:auto 1fr;grid-template-rows:auto auto}
       .score-wrap{grid-row:1;grid-column:2;align-self:start}
       .action-wrap{flex-direction:row;grid-column:1/-1}
       .action-wrap .btn{flex:1}
     }
-    @media (max-width:600px){
+    @media(max-width:600px){
       .screen{padding:7px}
       .bottom-bar{grid-template-columns:1fr;gap:10px}
       .legend{grid-template-columns:1fr}
@@ -193,7 +183,7 @@
       .action-wrap{flex-direction:row}
       .action-wrap .btn{flex:1}
     }
-    @media (orientation:landscape) and (max-height:520px){
+    @media(orientation:landscape) and (max-height:520px){
       .screen{padding:4px 6px}
       .rows{gap:4px;margin-bottom:4px}
       .row-card{padding:4px 8px;border-radius:10px}
@@ -201,13 +191,13 @@
       .row-title{font-size:.8rem;gap:6px}
       .dot{width:10px;height:10px}
       .row-meta{font-size:.72rem;gap:6px}
-      .external-lock{padding:2px 7px;font-size:.66rem}
+      .ext-lock{padding:2px 7px;font-size:.66rem}
       .number-grid{gap:3px;grid-template-columns:repeat(16,minmax(28px,1fr))}
       .num{min-width:28px;font-size:.78rem;border-radius:7px;border-width:1.5px}
       .num.crossed::after{font-size:1.2rem}
-      .num.lock{font-size:.85rem}
-      .player-bar{padding:6px 10px;margin-bottom:5px;border-radius:10px}
-      .player-bar-name{font-size:.88rem}
+      .dice-area{padding:6px 10px;margin-bottom:5px}
+      .die{width:34px;height:34px;font-size:1.1rem}
+      .turn-bar{padding:5px 10px;margin-bottom:5px;border-radius:10px}
       .bottom-bar{grid-template-columns:auto auto 1fr;grid-template-rows:auto;padding:5px 10px;gap:10px;margin-bottom:4px;border-radius:10px;align-items:center}
       .player-wrap{gap:3px}
       .player-wrap>div:first-child{display:none}
@@ -226,7 +216,7 @@
       .legend,.footer{display:none}
     }
     @media print{
-      .action-wrap,.external-lock,.footer,.legend,.player-bar,.home-wrap{display:none!important}
+      .action-wrap,.ext-lock,.footer,.legend,.turn-bar,.dice-area{display:none!important}
       .screen{width:100%;padding:0}
       .panel,.row-card,.bottom-bar{box-shadow:none}
       body{background:#fff}
@@ -235,514 +225,754 @@
 </head>
 <body>
 
-  <!-- ══ STARTSCHERM ══ -->
-  <div id="screen-home" class="screen active">
-    <div class="home-wrap">
-      <div class="home-brand">
-        <h1>🎲 Qwixx Longo</h1>
-        <p>Fan-made digitaal scoreblad · volledig offline</p>
-      </div>
-
-      <div class="mode-grid">
-        <button class="mode-card" id="btnScoreblad">
-          <div class="mode-icon">📋</div>
-          <div class="mode-title">Scoreblad</div>
-          <div class="mode-desc">Gebruik eigen dobbelstenen en vul je score zelf in. Eén speler.</div>
-        </button>
-        <button class="mode-card" id="btnMulti">
-          <div class="mode-icon">👥</div>
-          <div class="mode-title">Multiplayer</div>
-          <div class="mode-desc">2–4 spelers op één toestel. Elk zijn eigen scoreblad, beurtengewijs.</div>
-        </button>
-        <button class="mode-card disabled">
-          <div class="mode-icon">🎯</div>
-          <div class="mode-title">Solo</div>
-          <div class="mode-desc">Speel alleen met virtuele dobbelstenen en beurtenlogica.</div>
-          <span class="badge">Binnenkort</span>
-        </button>
-      </div>
-
-      <div id="savedNotice" class="saved-notice" style="display:none">
-        <span>📂 Lopend spel gevonden: <b id="savedLabel"></b></span>
-        <button id="btnResume">Doorgaan →</button>
-      </div>
+<!-- ══ STARTSCHERM ══ -->
+<div id="screen-home" class="screen active">
+  <div class="center-wrap">
+    <div class="home-brand">
+      <h1>🎲 Qwixx Longo</h1>
+      <p>Fan-made digitaal scoreblad · volledig offline of online</p>
+    </div>
+    <div class="mode-grid">
+      <button class="mode-card" id="btnScoreblad">
+        <div class="icon">📋</div>
+        <div class="title">Scoreblad</div>
+        <div class="desc">Gebruik eigen dobbelstenen en vul je score zelf in. Eén speler.</div>
+      </button>
+      <button class="mode-card" id="btnMulti">
+        <div class="icon">📡</div>
+        <div class="title">Online multiplayer</div>
+        <div class="desc">Elk op eigen gsm. Deel een kamercode, gooi samen dobbelstenen.</div>
+      </button>
+      <button class="mode-card soon">
+        <div class="icon">🎯</div>
+        <div class="title">Solo</div>
+        <div class="desc">Speel alleen met virtuele dobbelstenen en beurtenlogica.</div>
+        <span class="badge">Binnenkort</span>
+      </button>
+    </div>
+    <div id="savedNotice" style="display:none;color:var(--muted);font-size:.85rem;display:flex;gap:8px;align-items:center">
+      <span>📂 <b id="savedLabel"></b></span>
+      <button class="btn" id="btnResume" style="padding:5px 10px;font-size:.8rem">Doorgaan →</button>
     </div>
   </div>
+</div>
 
-  <!-- ══ MULTIPLAYER SETUP ══ -->
-  <div id="screen-multi-setup" class="screen">
-    <div class="setup-wrap">
-      <button class="btn btn-home" id="btnSetupBack">← Terug</button>
-      <h2 style="margin-top:14px">Spelers instellen</h2>
-      <p>Hoeveel spelers doen er mee?</p>
-      <div class="player-count-row" id="countBtns"></div>
-      <div class="player-inputs" id="playerInputs"></div>
-      <button class="btn btn-primary" id="btnStartMulti" style="width:100%;padding:13px">Spel starten →</button>
+<!-- ══ MULTIPLAYER LOBBY ══ -->
+<div id="screen-lobby" class="screen">
+  <div class="center-wrap">
+    <div class="lobby-wrap">
+      <button class="btn btn-muted" id="btnLobbyBack">← Terug</button>
+      <h2 style="margin-top:16px">Online multiplayer</h2>
+      <p>Voer je naam in en maak een nieuwe kamer aan of join met een code.</p>
+      <label class="field-label" for="lobbyName" style="margin-top:4px">Jouw naam</label>
+      <input id="lobbyName" class="name-input" type="text" placeholder="Naam" maxlength="20" autocomplete="off" style="margin-bottom:16px">
+      <button class="btn btn-primary" id="btnCreate" style="width:100%;padding:12px;font-size:1rem">+ Nieuwe kamer aanmaken</button>
+      <div class="sep">of</div>
+      <input id="joinCode" class="room-input" type="text" placeholder="XXXX" maxlength="4" autocomplete="off">
+      <button class="btn" id="btnJoin" style="width:100%;margin-top:10px;padding:12px;font-size:1rem">Meedoen met deze code →</button>
     </div>
   </div>
+</div>
 
-  <!-- ══ HANDOFF (geef toestel door) ══ -->
-  <div id="screen-handoff" class="screen">
-    <div class="handoff-wrap">
-      <div class="handoff-avatar" id="handoffAvatar"></div>
-      <h2 id="handoffTitle"></h2>
-      <p id="handoffSub">Klap het scherm even weg terwijl je doorgeeft.</p>
-      <button class="btn btn-primary" id="btnHandoffReady" style="padding:14px 32px;font-size:1.05rem;margin-top:8px">Klaar! →</button>
+<!-- ══ WACHTKAMER ══ -->
+<div id="screen-waiting" class="screen">
+  <div class="center-wrap">
+    <div class="room-code-label">Kamercode — deel met anderen</div>
+    <div class="room-code-big" id="waitingCode">----</div>
+    <div class="waiting-hint" id="waitingHint">Wachten op deelnemers…</div>
+    <div class="player-list" id="waitingPlayers"></div>
+    <button class="btn btn-green" id="btnStartGame" disabled style="padding:13px 28px;font-size:1rem;width:min(380px,100%)">Spel starten →</button>
+    <button class="btn btn-muted" id="btnLeaveWaiting">Kamer verlaten</button>
+  </div>
+</div>
+
+<!-- ══ SPEELSCHERM ══ -->
+<div id="screen-game" class="screen">
+
+  <!-- Turn-indicator -->
+  <div class="turn-bar" id="turnBar">
+    <div class="turn-dot" id="turnDot"></div>
+    <div class="turn-info">
+      <div class="turn-name" id="turnName">—</div>
+      <div class="turn-sub" id="turnSub"></div>
     </div>
+    <div class="turn-scores" id="turnScores"></div>
+    <div class="room-code-small" id="turnRoomCode"></div>
   </div>
 
-  <!-- ══ SPEELSCHERM ══ -->
-  <div id="screen-game" class="screen">
+  <!-- Dobbelstenen (alleen multiplayer) -->
+  <div class="dice-area" id="diceArea" style="display:none">
+    <div class="dice-meta">
+      <div class="turn-label" id="diceLabel">Dobbelstenen</div>
+      <button class="btn btn-roll" id="btnRoll">🎲 Gooi!</button>
+    </div>
+    <div class="dice-row" id="diceRow"></div>
+    <div class="combos" id="combos"></div>
+  </div>
 
-    <!-- Speler-indicator (alleen in multiplayer) -->
-    <div class="player-bar" id="playerBar" style="display:none">
-      <div class="player-bar-dot" id="playerBarDot"></div>
+  <!-- Scoreblad -->
+  <section id="rows" class="rows"></section>
+
+  <div class="bottom-bar">
+    <div>
+      <span class="field-label">Mislukte worpen</span>
+      <div class="penalties" id="penalties"></div>
+    </div>
+    <div class="player-wrap">
       <div>
-        <div class="player-bar-name" id="playerBarName"></div>
-        <div class="player-bar-sub" id="playerBarSub"></div>
+        <label class="field-label" for="playerName">Speler</label>
+        <input id="playerName" class="name-input" type="text" placeholder="Naam" maxlength="30" autocomplete="off">
       </div>
-      <div class="player-bar-scores" id="playerBarScores"></div>
-    </div>
-
-    <section id="rows" class="rows"></section>
-
-    <div class="bottom-bar">
       <div>
-        <span class="field-label">Mislukte worpen</span>
-        <div class="penalties" id="penalties"></div>
-      </div>
-      <div class="player-wrap">
-        <div>
-          <label class="field-label" for="playerName">Speler</label>
-          <input id="playerName" class="name-input" type="text" placeholder="Naam" maxlength="40" autocomplete="off">
+        <span class="field-label">Geluksgetallen</span>
+        <div class="lucky-wrap">
+          <div class="lucky-star"><input id="lucky1" class="lucky-input" type="number" min="2" max="16" value="5" inputmode="numeric"></div>
+          <div class="lucky-star"><input id="lucky2" class="lucky-input" type="number" min="2" max="16" value="8" inputmode="numeric"></div>
         </div>
-        <div>
-          <span class="field-label">Geluksgetallen</span>
-          <div class="lucky-wrap">
-            <div class="lucky-star"><input id="lucky1" class="lucky-input" type="number" min="2" max="16" value="5" inputmode="numeric"></div>
-            <div class="lucky-star"><input id="lucky2" class="lucky-input" type="number" min="2" max="16" value="8" inputmode="numeric"></div>
-          </div>
-        </div>
-      </div>
-      <div class="score-wrap">
-        <span class="field-label">Totaal</span>
-        <div class="score-total"><strong id="totalScore">0</strong><span>pt</span></div>
-        <div id="gameStatus" class="game-status">Spel loopt.</div>
-      </div>
-      <div class="action-wrap">
-        <button class="btn" id="undoBtn">↶ Ongedaan</button>
-        <button class="btn btn-pass" id="passBtn" style="display:none">Beurt doorgeven →</button>
-        <button class="btn" id="fullscreenBtn">⛶ Volledig scherm</button>
-        <button class="btn btn-danger" id="resetBtn">↺ Reset</button>
-        <button class="btn btn-home" id="btnToHome">⌂ Home</button>
-        <button class="btn" id="installBtn" hidden>⬇ Installeer</button>
       </div>
     </div>
-
-    <section class="legend">
-      <div class="panel">
-        <span class="field-label">Bediening</span>
-        <p><b>Tik op een getal</b> om het aan te kruisen. Eerdere vakken worden automatisch overgeslagen.</p>
-        <p>De laatste twee getallen mag je pas kiezen als er al <b>6 kruisjes</b> in die rij staan. Het slot telt als extra kruis.</p>
-        <p><b>"Extern sluiten"</b> gebruik je als een andere speler die kleur afsluit.</p>
-        <p>Elke mislukte worp kost <b>5 punten</b>. Bij 4 mislukte worpen eindigt het spel.</p>
-      </div>
-      <div class="panel">
-        <span class="field-label">Puntentelling per rij</span>
-        <p>1=1 · 2=3 · 3=6 · 4=10 · 5=15 · 6=21 · 7=28 · 8=36 · 9=45 · 10=55 · 11=66 · 12=78 · 13=91 · 14=105 · 15=120 · 16=136</p>
-        <p style="margin-top:.6rem">Het slot telt mee als <b>extra kruis</b> als je zelf sluit.</p>
-      </div>
-    </section>
-
-    <div class="footer">🎲 Qwixx Longo · fan-made digitaal scoreblad</div>
+    <div class="score-wrap">
+      <span class="field-label">Totaal</span>
+      <div class="score-total"><strong id="totalScore">0</strong><span>pt</span></div>
+      <div id="gameStatus" class="game-status">Spel loopt.</div>
+    </div>
+    <div class="action-wrap">
+      <button class="btn" id="undoBtn">↶ Ongedaan</button>
+      <button class="btn btn-pass" id="passBtn" style="display:none">Beurt doorgeven →</button>
+      <button class="btn" id="fullscreenBtn">⛶ Volledig scherm</button>
+      <button class="btn btn-danger" id="resetBtn">↺ Reset</button>
+      <button class="btn btn-muted" id="btnToHome">⌂ Home</button>
+      <button class="btn" id="installBtn" hidden>⬇ Installeer</button>
+    </div>
   </div>
 
-  <div class="toast" id="toast"></div>
+  <section class="legend" id="legendSection">
+    <div class="panel">
+      <span class="field-label">Bediening</span>
+      <p><b>Tik op een getal</b> om het aan te kruisen. Eerdere vakken worden automatisch overgeslagen.</p>
+      <p>De laatste twee getallen mag je pas kiezen als er al <b>6 kruisjes</b> in die rij staan. Het slot telt als extra kruis.</p>
+      <p><b>"Extern sluiten"</b> gebruik je als een andere speler die kleur afsluit.</p>
+      <p>Elke mislukte worp kost <b>5 punten</b>. Bij 4 eindigt het spel.</p>
+    </div>
+    <div class="panel">
+      <span class="field-label">Dobbelstenen – Qwixx Longo</span>
+      <p><b>⚪+⚪</b> = som in elke kleur (alle spelers)</p>
+      <p><b>⚪+kleur</b> = som in die kleur (alle spelers)</p>
+      <p><b>⚪+⚪+kleur</b> = som in die kleur (alleen actieve speler)</p>
+      <p>Actieve speler <b>moet</b> minstens iets invullen of strafpunt nemen.</p>
+    </div>
+  </section>
 
-  <script>
-  (() => {
-    // ── Constanten ──────────────────────────────────────────────────────────
-    const SCOREBLAD_KEY = "qwixx-longo-digital-score-v1";
-    const MULTI_KEY     = "qwixx-longo-multi-v2";
-    const COLORS = [
-      { id:"red",    name:"Rood",  hex:"#dc2626", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-      { id:"yellow", name:"Geel",  hex:"#ca8a04", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-      { id:"green",  name:"Groen", hex:"#16a34a", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] },
-      { id:"blue",   name:"Blauw", hex:"#2563eb", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] }
-    ];
-    const PLAYER_COLORS = ["#dc2626","#2563eb","#16a34a","#ca8a04"];
+  <div class="footer">🎲 Qwixx Longo · fan-made digitaal scoreblad</div>
+</div>
 
-    // ── Mode ─────────────────────────────────────────────────────────────────
-    let currentMode = null; // 'scoreblad' | 'multi'
-    let multiGame   = null; // { players:[{name,state}], activeIdx }
+<div class="toast" id="toast"></div>
 
-    // `state` wijst altijd naar het actieve scoreblad
-    let state;
-    let history = [];
-    let toastTimer;
+<script type="module">
+// ── Firebase imports ────────────────────────────────────────────────────────
+import { initializeApp }                from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, update, remove, onValue, onDisconnect, serverTimestamp }
+                                        from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    // ── State helpers ────────────────────────────────────────────────────────
-    const clone  = x => JSON.parse(JSON.stringify(x));
-    const scoreFor = n => n * (n + 1) / 2;
+const firebaseConfig = {
+  apiKey:            "AIzaSyD8ngWSOWjQy-iZMDP5eDGm85SA36uFxqs",
+  authDomain:        "qwixx-longo.firebaseapp.com",
+  databaseURL:       "https://qwixx-longo-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "qwixx-longo",
+  storageBucket:     "qwixx-longo.firebasestorage.app",
+  messagingSenderId: "604241265356",
+  appId:             "1:604241265356:web:3682f8462d99543f18b869"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db    = getDatabase(fbApp);
 
-    const freshState = (name = "") => ({
-      playerName: name,
-      lucky: [5, 8],
-      rows: Object.fromEntries(COLORS.map(c => [c.id, { cells: Array(15).fill("open"), lock: "open" }])),
-      penalties: [false, false, false, false]
-    });
+// ── Constanten ──────────────────────────────────────────────────────────────
+const SCOREBLAD_KEY = "qwixx-longo-digital-score-v1";
+const PLAYER_ID_KEY = "qwixx-player-id";
+const ROOM_KEY      = "qwixx-room";
 
-    function crossedCount(row) { return row.cells.filter(v => v === "cross").length; }
-    function rowScore(row)     { return scoreFor(crossedCount(row) + (row.lock === "own" ? 1 : 0)); }
-    function totalScore()      { return COLORS.reduce((s,c) => s + rowScore(state.rows[c.id]), 0) - state.penalties.filter(Boolean).length * 5; }
-    function closedRows()      { return COLORS.filter(c => state.rows[c.id].lock !== "open").length; }
-    function gameEnded()       { return state.penalties.filter(Boolean).length >= 4 || closedRows() >= 2; }
-    function checkpoint()      { history.push(clone(state)); if (history.length > 80) history.shift(); }
-    function latestProgress(row){ let i=-1; row.cells.forEach((v,j)=>{ if(v==="cross"||v==="skip") i=j; }); return i; }
+const COLORS = [
+  { id:"red",    name:"Rood",  hex:"#dc2626", cls:"c-red",    nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+  { id:"yellow", name:"Geel",  hex:"#ca8a04", cls:"c-yellow", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+  { id:"green",  name:"Groen", hex:"#16a34a", cls:"c-green",  nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] },
+  { id:"blue",   name:"Blauw", hex:"#2563eb", cls:"c-blue",   nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] }
+];
+const P_COLORS = ["#dc2626","#2563eb","#16a34a","#ca8a04"];
 
-    // ── Opslaan / laden ──────────────────────────────────────────────────────
-    function saveScoreblad() { localStorage.setItem(SCOREBLAD_KEY, JSON.stringify(state)); }
-    function saveMulti()     { localStorage.setItem(MULTI_KEY, JSON.stringify(multiGame)); }
+// ── Sessie-state ─────────────────────────────────────────────────────────────
+let playerId   = localStorage.getItem(PLAYER_ID_KEY) || ("p_" + Math.random().toString(36).slice(2,10));
+let currentMode = null; // 'scoreblad' | 'multi'
+let roomCode   = null;
+let roomData   = null;  // live van Firebase
+let roomUnsubscribe = null;
 
-    function hasSavedScoreblad() {
-      try { const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY)); return r && r.rows && r.penalties; } catch(e){ return false; }
-    }
-    function hasSavedMulti() {
-      try { const r = JSON.parse(localStorage.getItem(MULTI_KEY)); return r && r.players && r.players.length; } catch(e){ return false; }
-    }
-    function loadScoreblad() {
-      try { const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY)); if(r && r.rows) state = r; } catch(e){}
-    }
-    function loadMulti() {
-      try { const r = JSON.parse(localStorage.getItem(MULTI_KEY)); if(r && r.players) multiGame = r; } catch(e){}
-    }
+// Scoreblad-modus
+let state;             // actief scoreblad
+let history = [];
+let toastTimer;
 
-    // ── Navigatie ────────────────────────────────────────────────────────────
-    function navigate(id) {
-      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
-      document.getElementById("screen-"+id).classList.add("active");
-    }
+localStorage.setItem(PLAYER_ID_KEY, playerId);
 
-    // ── Toast ────────────────────────────────────────────────────────────────
-    function showToast(msg, dur) {
-      const el = document.getElementById("toast");
-      el.textContent = msg; el.classList.add("show");
-      clearTimeout(toastTimer);
-      toastTimer = setTimeout(() => el.classList.remove("show"), dur || 2400);
-    }
+// ── State helpers ─────────────────────────────────────────────────────────────
+const clone    = x => JSON.parse(JSON.stringify(x));
+const scoreFor = n => n * (n + 1) / 2;
+const freshState = (name="") => ({
+  playerName: name,
+  lucky: [5, 8],
+  rows: Object.fromEntries(COLORS.map(c => [c.id, { cells: Array(15).fill("open"), lock:"open" }])),
+  penalties: [false,false,false,false]
+});
+const crossedCount = row => row.cells.filter(v=>v==="cross").length;
+const rowScore     = row => scoreFor(crossedCount(row) + (row.lock==="own"?1:0));
+const totalScore   = ()  => COLORS.reduce((s,c)=>s+rowScore(state.rows[c.id]),0) - state.penalties.filter(Boolean).length*5;
+const closedRows   = ()  => COLORS.filter(c=>state.rows[c.id].lock!=="open").length;
+const gameEnded    = ()  => state.penalties.filter(Boolean).length>=4 || closedRows()>=2;
+const checkpoint   = ()  => { history.push(clone(state)); if(history.length>80) history.shift(); };
+const latestProg   = row => { let i=-1; row.cells.forEach((v,j)=>{ if(v==="cross"||v==="skip") i=j; }); return i; };
 
-    // ── Startscherm opzetten ─────────────────────────────────────────────────
-    function initHome() {
-      const notice = document.getElementById("savedNotice");
-      const label  = document.getElementById("savedLabel");
-      if (hasSavedMulti()) {
-        loadMulti();
-        const names = multiGame.players.map(p=>p.name||"?").join(", ");
-        label.textContent = `Multiplayer (${names})`;
-        notice.style.display = "flex";
-        document.getElementById("btnResume").onclick = () => resumeMulti();
-      } else if (hasSavedScoreblad()) {
-        const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY));
-        label.textContent = `Scoreblad${r.playerName ? " · " + r.playerName : ""}`;
+// ── Toast ──────────────────────────────────────────────────────────────────────
+function showToast(msg, dur=2400) {
+  const el = document.getElementById("toast");
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove("show"), dur);
+}
+
+// ── Navigatie ──────────────────────────────────────────────────────────────────
+function navigate(id) {
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+id).classList.add("active");
+}
+
+// ── Startscherm ────────────────────────────────────────────────────────────────
+function initHome() {
+  const notice = document.getElementById("savedNotice");
+  const label  = document.getElementById("savedLabel");
+  const savedRoom = localStorage.getItem(ROOM_KEY);
+  if (savedRoom) {
+    label.textContent = `Lopend online spel (${savedRoom})`;
+    notice.style.display = "flex";
+    document.getElementById("btnResume").onclick = () => reconnectRoom(savedRoom);
+  } else {
+    const raw = localStorage.getItem(SCOREBLAD_KEY);
+    try {
+      const r = JSON.parse(raw);
+      if (r && r.rows) {
+        label.textContent = `Scoreblad${r.playerName?" · "+r.playerName:""}`;
         notice.style.display = "flex";
         document.getElementById("btnResume").onclick = () => startScoreblad(true);
-      } else {
-        notice.style.display = "none";
-      }
-    }
+      } else { notice.style.display = "none"; }
+    } catch(e){ notice.style.display = "none"; }
+  }
+}
 
-    // ── Scoreblad starten ─────────────────────────────────────────────────────
-    function startScoreblad(resume = false) {
-      currentMode = "scoreblad"; multiGame = null; history = [];
-      state = freshState();
-      if (resume) loadScoreblad();
-      document.getElementById("playerBar").style.display = "none";
-      document.getElementById("passBtn").style.display = "none";
-      document.getElementById("playerName").closest(".player-wrap").querySelector("div:first-child").style.display = "";
-      navigate("game");
-      render();
-    }
+// ── Scoreblad-modus ────────────────────────────────────────────────────────────
+function startScoreblad(resume=false) {
+  currentMode = "scoreblad"; roomCode = null; history = [];
+  state = freshState();
+  if (resume) {
+    try { const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY)); if(r&&r.rows) state=r; } catch(e){}
+  }
+  setupGameScreen(false);
+  navigate("game");
+  render();
+}
+function saveScoreblad() { localStorage.setItem(SCOREBLAD_KEY, JSON.stringify(state)); }
 
-    // ── Multiplayer setup ─────────────────────────────────────────────────────
-    let setupCount = 2;
-    function initMultiSetup() {
-      // Count buttons
-      const countRow = document.getElementById("countBtns");
-      countRow.innerHTML = "";
-      [2,3,4].forEach(n => {
-        const b = document.createElement("button");
-        b.className = "count-btn" + (n === setupCount ? " active" : "");
-        b.textContent = n + " spelers";
-        b.onclick = () => { setupCount = n; initMultiSetup(); };
-        countRow.appendChild(b);
-      });
-      // Player inputs
-      const inp = document.getElementById("playerInputs");
-      const existing = Array.from(inp.querySelectorAll("input")).map(i => i.value);
-      inp.innerHTML = "";
-      for (let i = 0; i < setupCount; i++) {
-        const row = document.createElement("div");
-        row.className = "player-input-row";
-        const num = document.createElement("div");
-        num.className = `player-num p-color-${i}`;
-        num.textContent = i+1;
-        const input = document.createElement("input");
-        input.className = "name-input";
-        input.type = "text";
-        input.placeholder = `Speler ${i+1}`;
-        input.maxLength = 30;
-        input.value = existing[i] || "";
-        row.append(num, input);
-        inp.appendChild(row);
-      }
-    }
+// ── Multiplayer: lobby ─────────────────────────────────────────────────────────
+function generateCode() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  return Array.from({length:4}, ()=>chars[Math.floor(Math.random()*chars.length)]).join("");
+}
 
-    function startMulti(resume = false) {
-      currentMode = "multi"; history = [];
-      if (resume) {
-        // multiGame already loaded
-      } else {
-        const inputs = document.querySelectorAll("#playerInputs input");
-        const names = Array.from(inputs).map((inp,i) => inp.value.trim() || `Speler ${i+1}`);
-        multiGame = {
-          players: names.map(name => ({ name, state: freshState(name) })),
-          activeIdx: 0
-        };
-        saveMulti();
-        localStorage.removeItem(SCOREBLAD_KEY);
-      }
-      activatePlayer(multiGame.activeIdx, false);
-    }
+async function createRoom() {
+  const name = document.getElementById("lobbyName").value.trim() || "Speler";
+  const code = generateCode();
+  state = freshState(name);
+  const playerData = { name, order:0, online:true, state };
+  await set(ref(db, `rooms/${code}`), {
+    hostId:         playerId,
+    status:         "waiting",
+    activePlayerId: null,
+    turnNumber:     0,
+    dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null },
+    globalLocks:    { red:null, yellow:null, green:null, blue:null },
+    players:        { [playerId]: playerData }
+  });
+  roomCode = code;
+  localStorage.setItem(ROOM_KEY, code);
+  setupDisconnect();
+  listenToRoom();
+  navigate("waiting");
+}
 
-    function resumeMulti() {
-      currentMode = "multi"; history = [];
-      activatePlayer(multiGame.activeIdx, false);
-    }
+async function joinRoom() {
+  const code = document.getElementById("joinCode").value.trim().toUpperCase();
+  const name = document.getElementById("lobbyName").value.trim() || "Speler";
+  if (code.length !== 4) { showToast("Voer een geldige 4-lettercode in."); return; }
+  const snap = await get(ref(db, `rooms/${code}`));
+  if (!snap.exists()) { showToast("Kamer niet gevonden. Controleer de code."); return; }
+  const data = snap.val();
+  if (data.status === "ended") { showToast("Dit spel is al afgelopen."); return; }
+  const count = Object.keys(data.players||{}).length;
+  if (count >= 4) { showToast("Kamer is vol (max 4 spelers)."); return; }
+  state = freshState(name);
+  await update(ref(db, `rooms/${code}/players/${playerId}`), { name, order:count, online:true, state });
+  roomCode = code;
+  localStorage.setItem(ROOM_KEY, code);
+  setupDisconnect();
+  listenToRoom();
+  navigate("waiting");
+}
 
-    function activatePlayer(idx, showHandoff) {
-      multiGame.activeIdx = idx;
-      state = multiGame.players[idx].state;
-      if (showHandoff) {
-        const p = multiGame.players[idx];
-        document.getElementById("handoffAvatar").style.background = PLAYER_COLORS[idx];
-        document.getElementById("handoffAvatar").textContent = p.name.charAt(0).toUpperCase() || "?";
-        document.getElementById("handoffTitle").textContent = `${p.name} is aan zet`;
-        navigate("handoff");
-      } else {
-        enterGame();
-      }
-    }
-
-    function enterGame() {
-      // Show/hide multi-specific UI
-      const isMulti = currentMode === "multi";
-      document.getElementById("playerBar").style.display = isMulti ? "flex" : "none";
-      document.getElementById("passBtn").style.display  = isMulti ? "" : "none";
-      // In multi: hide name field (name is fixed)
-      document.querySelector(".player-wrap>div:first-child").style.display = isMulti ? "none" : "";
-      navigate("game");
-      render();
-    }
-
-    function passToNext() {
-      if (currentMode !== "multi") return;
-      saveMulti();
-      const next = (multiGame.activeIdx + 1) % multiGame.players.length;
-      activatePlayer(next, true);
-    }
-
-    // ── Spel: nummers aanvinken ───────────────────────────────────────────────
-    function markNumber(colorId, index) {
-      const row = state.rows[colorId];
-      if (row.lock !== "open") { showToast("Deze rij is al gesloten."); return; }
-      const cur = row.cells[index];
-      if (cur !== "open") { showToast(cur === "cross" ? "Al aangekruist." : "Al voorbij."); return; }
-      if (index <= latestProgress(row)) { showToast("Je kunt alleen naar rechts."); return; }
-      if (index >= 13 && crossedCount(row) < 6) { showToast("Je hebt eerst 6 kruisjes nodig voor de laatste twee."); return; }
-      checkpoint();
-      for (let i=0;i<index;i++) if(row.cells[i]==="open") row.cells[i]="skip";
-      row.cells[index] = "cross";
-      if (index >= 13) {
-        row.lock = "own";
-        for (let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
-        showToast("Rij gesloten! Het slot telt mee als extra kruis.");
-      }
-      currentMode === "multi" ? saveMulti() : saveScoreblad();
-      render();
-    }
-
-    function toggleExternalLock(colorId) {
-      const row = state.rows[colorId];
-      checkpoint();
-      if (row.lock === "external") { row.lock = "open"; }
-      else if (row.lock === "own") { showToast("Jij sloot deze rij. Gebruik Ongedaan."); history.pop(); return; }
-      else { row.lock = "external"; }
-      currentMode === "multi" ? saveMulti() : saveScoreblad();
-      render();
-    }
-
-    // ── Renderen ─────────────────────────────────────────────────────────────
-    function renderRows() {
-      const root = document.getElementById("rows");
-      root.innerHTML = "";
-      COLORS.forEach(color => {
-        const row = state.rows[color.id];
-        const card = document.createElement("section");
-        card.className = "row-card";
-        card.style.setProperty("--row-color", color.hex);
-        const head = document.createElement("div"); head.className = "row-head";
-        const title = document.createElement("div"); title.className = "row-title";
-        title.innerHTML = `<span class="dot" style="background:${color.hex}"></span>${color.name}`;
-        const meta = document.createElement("div"); meta.className = "row-meta";
-        const marks = crossedCount(row) + (row.lock === "own" ? 1 : 0);
-        meta.innerHTML = `<span>${marks} kruis${marks===1?"":"jes"}</span><span class="row-score">${rowScore(row)} pt</span>`;
-        const ext = document.createElement("button");
-        ext.className = "external-lock" + (row.lock === "external" ? " active" : "");
-        ext.textContent = row.lock === "external" ? "🔒 Extern gesloten" : "🔒 Extern sluiten";
-        ext.onclick = () => toggleExternalLock(color.id);
-        meta.appendChild(ext); head.append(title, meta);
-        const grid = document.createElement("div"); grid.className = "number-grid";
-        color.nums.forEach((num, i) => {
-          const b = document.createElement("button");
-          b.className = "num"; b.innerHTML = `<span>${num}</span>`;
-          b.setAttribute("aria-label", `${color.name} ${num}`);
-          if (row.cells[i]==="cross")  b.classList.add("crossed");
-          if (row.cells[i]==="skip")   b.classList.add("skipped");
-          if (row.lock!=="open" && row.cells[i]==="open") b.classList.add("locked-out");
-          b.onclick = () => markNumber(color.id, i);
-          grid.appendChild(b);
-        });
-        const lock = document.createElement("div");
-        lock.className = "num lock"; lock.textContent = "🔒";
-        if (row.lock==="own")      lock.classList.add("own");
-        if (row.lock==="external") lock.classList.add("external");
-        grid.appendChild(lock);
-        card.append(head, grid);
-        root.appendChild(card);
-      });
-    }
-
-    function renderPenalties() {
-      const root = document.getElementById("penalties"); root.innerHTML = "";
-      state.penalties.forEach((on, i) => {
-        const b = document.createElement("button");
-        b.className = "penalty" + (on ? " on" : "");
-        b.innerHTML = `<span>${i+1}</span>`;
-        b.setAttribute("aria-label", `Mislukte worp ${i+1}`);
-        b.onclick = () => { checkpoint(); state.penalties[i]=!state.penalties[i]; currentMode==="multi"?saveMulti():saveScoreblad(); render(); };
-        root.appendChild(b);
-      });
-    }
-
-    function renderSummary() {
-      document.getElementById("playerName").value = state.playerName || "";
-      document.getElementById("lucky1").value = state.lucky?.[0] ?? 5;
-      document.getElementById("lucky2").value = state.lucky?.[1] ?? 8;
-      document.getElementById("totalScore").textContent = totalScore();
-      const status = document.getElementById("gameStatus");
-      if (gameEnded()) {
-        status.className = "game-status ended";
-        status.textContent = `Spel afgelopen · ${state.penalties.filter(Boolean).length>=4?"4 mislukte worpen":"2 gesloten kleuren"}.`;
-      } else {
-        status.className = "game-status";
-        status.textContent = `${state.penalties.filter(Boolean).length}/4 straf · ${closedRows()}/2 kleuren dicht`;
-      }
-      document.getElementById("undoBtn").disabled = history.length === 0;
-    }
-
-    function renderPlayerBar() {
-      if (currentMode !== "multi") return;
-      const p = multiGame.players[multiGame.activeIdx];
-      document.getElementById("playerBarDot").style.background = PLAYER_COLORS[multiGame.activeIdx];
-      document.getElementById("playerBarName").textContent = p.name;
-      document.getElementById("playerBarSub").textContent =
-        `Speler ${multiGame.activeIdx+1} van ${multiGame.players.length}`;
-      // Mini-scores van alle spelers
-      const scoresEl = document.getElementById("playerBarScores");
-      scoresEl.innerHTML = multiGame.players.map((pl, i) => {
-        const s = COLORS.reduce((acc,c) => acc + rowScore(pl.state.rows[c.id]), 0)
-                  - pl.state.penalties.filter(Boolean).length * 5;
-        const active = i === multiGame.activeIdx;
-        return `<span style="${active?"color:var(--ink);font-weight:900":""}">${pl.name.split(" ")[0]}: <span>${s}</span>pt</span>`;
-      }).join("");
-    }
-
-    function render() {
-      renderRows();
-      renderPenalties();
-      renderSummary();
-      renderPlayerBar();
-    }
-
-    // ── Invoer ────────────────────────────────────────────────────────────────
-    document.getElementById("playerName").addEventListener("input", e => {
-      state.playerName = e.target.value;
-      currentMode === "multi" ? saveMulti() : saveScoreblad();
-    });
-    ["lucky1","lucky2"].forEach((id, idx) => {
-      document.getElementById(id).addEventListener("change", e => {
-        let v = Math.max(2, Math.min(16, Number(e.target.value)||(idx?8:5)));
-        state.lucky[idx] = v; e.target.value = v;
-        currentMode === "multi" ? saveMulti() : saveScoreblad();
-      });
-    });
-
-    // ── Knop-handlers ────────────────────────────────────────────────────────
-    document.getElementById("undoBtn").onclick = () => {
-      if (!history.length) return;
-      state = history.pop();
-      if (currentMode === "multi") { multiGame.players[multiGame.activeIdx].state = state; saveMulti(); }
-      else saveScoreblad();
-      render();
-    };
-    document.getElementById("passBtn").onclick = passToNext;
-    document.getElementById("resetBtn").onclick = () => {
-      if (!confirm("Dit scoreblad wissen en opnieuw beginnen?")) return;
-      checkpoint(); state = freshState(state.playerName);
-      if (currentMode === "multi") { multiGame.players[multiGame.activeIdx].state = state; saveMulti(); }
-      else saveScoreblad();
-      render();
-    };
-    document.getElementById("btnToHome").onclick = () => {
-      if (currentMode === "multi") saveMulti();
-      else saveScoreblad();
-      navigate("home"); initHome();
-    };
-
-    // ── Volledig scherm (iOS-proof) ──────────────────────────────────────────
-    const fsBtn = document.getElementById("fullscreenBtn");
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode:standalone)").matches;
-    if (isIOS) {
-      if (isStandalone) { fsBtn.hidden = true; }
-      else { fsBtn.textContent = "📱 Voeg toe aan beginscherm"; fsBtn.classList.add("btn-ios-fs"); fsBtn.onclick = () => showToast("Tik op het deel-icoon (□↑) in Safari → 'Zet op beginscherm'.", 4500); }
-    } else {
-      fsBtn.onclick = async () => {
-        try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); }
-        catch(e) { showToast("Volledig scherm niet ondersteund."); }
-      };
-    }
-
-    // ── Home knoppen ─────────────────────────────────────────────────────────
-    document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
-    document.getElementById("btnMulti").onclick = () => { initMultiSetup(); navigate("multi-setup"); };
-    document.getElementById("btnSetupBack").onclick  = () => navigate("home");
-    document.getElementById("btnStartMulti").onclick = () => startMulti(false);
-    document.getElementById("btnHandoffReady").onclick = () => enterGame();
-
-    // ── PWA: install & SW ────────────────────────────────────────────────────
-    let deferredPrompt = null;
-    const installBtn = document.getElementById("installBtn");
-    window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; installBtn.hidden = false; });
-    installBtn.onclick = async () => { if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; installBtn.hidden=true; };
-    window.addEventListener("appinstalled", () => { installBtn.hidden = true; });
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => { navigator.serviceWorker.register("service-worker.js").then(r=>r.update()).catch(()=>{}); });
-    }
-
-    // ── Opstarten ────────────────────────────────────────────────────────────
+async function reconnectRoom(code) {
+  const snap = await get(ref(db, `rooms/${code}`));
+  if (!snap.exists()) {
+    localStorage.removeItem(ROOM_KEY);
+    showToast("Kamer niet meer beschikbaar.");
     initHome();
-  })();
-  </script>
+    return;
+  }
+  const data = snap.val();
+  roomCode = code;
+  roomData = data;
+  const myData = data.players?.[playerId];
+  if (myData) state = myData.state;
+  await update(ref(db, `rooms/${code}/players/${playerId}/online`), true);
+  setupDisconnect();
+  listenToRoom();
+  navigate(data.status === "playing" ? "game" : "waiting");
+  if (data.status === "playing") { setupGameScreen(true); render(); }
+}
+
+function setupDisconnect() {
+  onDisconnect(ref(db, `rooms/${roomCode}/players/${playerId}/online`)).set(false);
+}
+
+// ── Room listener ──────────────────────────────────────────────────────────────
+function listenToRoom() {
+  if (roomUnsubscribe) roomUnsubscribe();
+  roomUnsubscribe = onValue(ref(db, `rooms/${roomCode}`), snap => {
+    roomData = snap.val();
+    if (!roomData) { navigate("home"); localStorage.removeItem(ROOM_KEY); showToast("Kamer is verwijderd."); return; }
+
+    // Verwerk globale sloten
+    if (roomData.globalLocks) {
+      COLORS.forEach(c => {
+        const lock = roomData.globalLocks[c.id];
+        if (lock && lock.lockedBy && lock.lockedBy !== playerId) {
+          if (state.rows[c.id].lock === "open") {
+            state.rows[c.id].lock = "external";
+          }
+        }
+      });
+    }
+
+    // Update eigen state van Firebase (als andere client het heeft geüpdatet)
+    const myFb = roomData.players?.[playerId]?.state;
+    // Alleen overnemen als onze lokale state nog standaard is (freshState), om conflicten te vermijden
+    // We pushen altijd onszelf naar Firebase, dus lokale state is leidend.
+
+    const curScreen = document.querySelector(".screen.active")?.id;
+    if (curScreen === "screen-waiting") renderWaiting();
+    if (curScreen === "screen-game") { render(); renderDice(); renderTurnBar(); }
+
+    // Naar game als host het spel start
+    if (roomData.status === "playing" && curScreen === "screen-waiting") {
+      setupGameScreen(true);
+      navigate("game");
+      render();
+    }
+    // Naar eindscherm
+    if (roomData.status === "ended" && curScreen === "screen-game") {
+      renderEndGame();
+    }
+  });
+}
+
+// ── Wachtkamer ────────────────────────────────────────────────────────────────
+function renderWaiting() {
+  if (!roomData) return;
+  document.getElementById("waitingCode").textContent = roomCode;
+  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+  const list = document.getElementById("waitingPlayers");
+  list.innerHTML = "";
+  players.forEach(([pid, p], i) => {
+    const item = document.createElement("div");
+    item.className = "player-list-item";
+    const dot = document.createElement("div");
+    dot.className = "player-list-dot";
+    dot.style.background = P_COLORS[i] || "#9ca3af";
+    item.append(dot);
+    item.append(Object.assign(document.createElement("span"), { textContent: p.name + (pid===playerId?" (jij)":"") }));
+    if (pid === roomData.hostId) {
+      item.append(Object.assign(document.createElement("span"), { className:"player-list-host", textContent:"gastheer" }));
+    }
+    list.appendChild(item);
+  });
+  const isHost   = roomData.hostId === playerId;
+  const canStart = players.length >= 2;
+  const startBtn = document.getElementById("btnStartGame");
+  startBtn.disabled = !isHost || !canStart;
+  startBtn.textContent = isHost ? (canStart ? "Spel starten →" : "Wachten op spelers…") : "Wachten op gastheer…";
+  document.getElementById("waitingHint").textContent =
+    `${players.length} speler${players.length===1?"":"s"} · Kamercode: ${roomCode}`;
+}
+
+async function startGame() {
+  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+  const firstId = players[0][0];
+  await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId });
+}
+
+async function leaveRoom() {
+  if (roomCode) {
+    await remove(ref(db, `rooms/${roomCode}/players/${playerId}`));
+    // Als host vertrekt en er nog spelers zijn, geef host door
+    if (roomData?.hostId === playerId) {
+      const remaining = Object.entries(roomData.players||{}).filter(([pid])=>pid!==playerId);
+      if (remaining.length > 0) {
+        await update(ref(db, `rooms/${roomCode}`), { hostId: remaining[0][0] });
+      } else {
+        await remove(ref(db, `rooms/${roomCode}`));
+      }
+    }
+  }
+  if (roomUnsubscribe) roomUnsubscribe();
+  roomCode = null; roomData = null;
+  localStorage.removeItem(ROOM_KEY);
+  navigate("home"); initHome();
+}
+
+// ── Spel setup ────────────────────────────────────────────────────────────────
+function setupGameScreen(isMulti) {
+  currentMode = isMulti ? "multi" : "scoreblad";
+  document.getElementById("turnBar").style.display   = isMulti ? "flex" : "none";
+  document.getElementById("diceArea").style.display  = isMulti ? "" : "none";
+  document.getElementById("passBtn").style.display   = isMulti ? "" : "none";
+  document.getElementById("legendSection").style.display = "";
+  // In multi: naam-veld verbergen (naam komt van lobby)
+  document.querySelector(".player-wrap>div:first-child").style.display = isMulti ? "none" : "";
+}
+
+// ── Dobbelstenen ──────────────────────────────────────────────────────────────
+function amIActive() {
+  return currentMode === "multi" && roomData?.activePlayerId === playerId;
+}
+
+async function rollDice() {
+  if (!amIActive()) return;
+  if (roomData?.dice?.rolled) { showToast("Dobbelstenen zijn al gegooid."); return; }
+  const roll = () => Math.floor(Math.random()*6)+1;
+  const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
+  // Animatie
+  document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
+  await update(ref(db, `rooms/${roomCode}/dice`), dice);
+}
+
+function renderDice() {
+  if (currentMode !== "multi" || !roomData) return;
+  const dice = roomData.dice || {};
+  const active = amIActive();
+  const isActive = roomData.activePlayerId === playerId;
+
+  // Label
+  const activePlayer = Object.values(roomData.players||{}).find(p=>p.name) || {};
+  const activeName = roomData.players?.[roomData.activePlayerId]?.name || "?";
+  document.getElementById("diceLabel").innerHTML =
+    isActive ? "<b>Jij gooit</b>" : `<b>${activeName}</b> is aan zet`;
+
+  // Roll button
+  const btn = document.getElementById("btnRoll");
+  btn.style.display = isActive && !dice.rolled ? "" : "none";
+
+  // Dobbelstenen
+  const diceRow = document.getElementById("diceRow");
+  diceRow.innerHTML = "";
+  const DICE = [
+    { key:"w1", cls:"white", label:"⚪" },
+    { key:"w2", cls:"white", label:"⚪" },
+    { key:"red",    cls:"c-red",    label:"🔴" },
+    { key:"yellow", cls:"c-yellow", label:"🟡" },
+    { key:"green",  cls:"c-green",  label:"🟢" },
+    { key:"blue",   cls:"c-blue",   label:"🔵" }
+  ];
+  DICE.forEach(({key,cls}) => {
+    const d = document.createElement("div");
+    const val = dice[key];
+    d.className = `die ${val!=null ? cls : "empty"}`;
+    d.textContent = val != null ? val : "·";
+    diceRow.appendChild(d);
+  });
+
+  // Combinaties
+  const combos = document.getElementById("combos");
+  combos.innerHTML = "";
+  if (dice.rolled) {
+    const w = dice.w1 + dice.w2;
+    addCombo(combos, `⚪+⚪ = ${w}`, "for-all");
+    COLORS.forEach(c => {
+      const v1 = dice.w1 + dice[c.id];
+      const v2 = dice.w2 + dice[c.id];
+      const extra = dice.w1 + dice.w2 + dice[c.id];
+      const vals = v1===v2 ? [v1] : [v1,v2];
+      addCombo(combos, `⚪+${c.name.slice(0,2)}: ${vals.join("/")}`, "for-all");
+      if (isActive) addCombo(combos, `⚪+⚪+${c.name.slice(0,2)}: ${extra}`, "active-extra");
+    });
+  }
+}
+
+function addCombo(parent, text, cls) {
+  const el = document.createElement("span");
+  el.className = `combo ${cls}`;
+  el.textContent = text;
+  parent.appendChild(el);
+}
+
+// ── Turn bar ──────────────────────────────────────────────────────────────────
+function renderTurnBar() {
+  if (currentMode !== "multi" || !roomData) return;
+  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+  const activeId = roomData.activePlayerId;
+  const activeIdx = players.findIndex(([pid])=>pid===activeId);
+  const dot = document.getElementById("turnDot");
+  dot.style.background = P_COLORS[activeIdx] || "#9ca3af";
+  const activeName = players[activeIdx]?.[1]?.name || "?";
+  document.getElementById("turnName").textContent = activeId===playerId ? "Jij bent aan zet 🎲" : `${activeName} is aan zet`;
+  document.getElementById("turnSub").textContent  = `Ronde ${roomData.turnNumber||1} · ${players.length} spelers`;
+  document.getElementById("turnRoomCode").textContent = roomCode;
+
+  // Scores van alle spelers
+  const scoresEl = document.getElementById("turnScores");
+  scoresEl.innerHTML = "";
+  players.forEach(([pid, p], i) => {
+    const s = COLORS.reduce((acc,c)=>acc+rowScore(p.state?.rows?.[c.id]||{cells:[],lock:"open"}),0)
+              - (p.state?.penalties||[]).filter(Boolean).length*5;
+    const isMe = pid === playerId;
+    const span = document.createElement("span");
+    span.className = isMe ? "me" : "";
+    span.textContent = `${p.name.split(" ")[0]}: ${s}pt`;
+    scoresEl.appendChild(span);
+  });
+}
+
+// ── Beurt doorgeven ────────────────────────────────────────────────────────────
+async function passToNext() {
+  if (!amIActive()) return;
+  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+  const myIdx   = players.findIndex(([pid])=>pid===playerId);
+  const nextIdx = (myIdx+1) % players.length;
+  const nextId  = players[nextIdx][0];
+
+  // Check speleinde
+  const locks = Object.values(roomData.globalLocks||{}).filter(Boolean).length;
+  const anyMaxPenalties = players.some(([,p])=>(p.state?.penalties||[]).filter(Boolean).length>=4);
+  if (locks >= 2 || anyMaxPenalties) {
+    await update(ref(db,`rooms/${roomCode}`), { status:"ended", endReason: locks>=2?"locks":"penalties" });
+    return;
+  }
+
+  await update(ref(db,`rooms/${roomCode}`), {
+    activePlayerId: nextId,
+    turnNumber:     (roomData.turnNumber||1)+1,
+    dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null }
+  });
+}
+
+function renderEndGame() {
+  const players = Object.entries(roomData?.players||{}).sort((a,b)=>a[1].order-b[1].order);
+  const scores = players.map(([pid,p])=>{
+    const s = COLORS.reduce((acc,c)=>acc+rowScore(p.state?.rows?.[c.id]||{cells:[],lock:"open"}),0)
+              - (p.state?.penalties||[]).filter(Boolean).length*5;
+    return { name:p.name, score:s, isMe: pid===playerId };
+  }).sort((a,b)=>b.score-a.score);
+  const winner = scores[0];
+  showToast(`🏆 Spel afgelopen! Winnaar: ${winner.name} met ${winner.score} punten`, 8000);
+  document.getElementById("gameStatus").className = "game-status ended";
+  document.getElementById("gameStatus").textContent = `Spel afgelopen · ${winner.name} wint met ${winner.score}pt`;
+}
+
+// ── Scoreblad: nummers aanvinken ───────────────────────────────────────────────
+function markNumber(colorId, index) {
+  const row = state.rows[colorId];
+  if (row.lock!=="open") { showToast("Deze rij is al gesloten."); return; }
+  const cur = row.cells[index];
+  if (cur!=="open") { showToast(cur==="cross"?"Al aangekruist.":"Al voorbij."); return; }
+  if (index<=latestProg(row)) { showToast("Je kunt alleen naar rechts."); return; }
+  if (index>=13 && crossedCount(row)<6) { showToast("Je hebt eerst 6 kruisjes nodig voor de laatste twee."); return; }
+  checkpoint();
+  for(let i=0;i<index;i++) if(row.cells[i]==="open") row.cells[i]="skip";
+  row.cells[index]="cross";
+  if (index>=13) {
+    row.lock="own";
+    for(let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
+    // Broadcast global lock
+    if (currentMode==="multi") {
+      update(ref(db,`rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy:playerId });
+    }
+    showToast("Rij gesloten! Het slot telt mee als extra kruis.");
+  }
+  saveState();
+  render();
+}
+
+function toggleExternalLock(colorId) {
+  const row = state.rows[colorId];
+  checkpoint();
+  if (row.lock==="external") { row.lock="open"; }
+  else if (row.lock==="own") { showToast("Jij sloot deze rij. Gebruik Ongedaan."); history.pop(); return; }
+  else { row.lock="external"; }
+  saveState();
+  render();
+}
+
+function saveState() {
+  if (currentMode==="scoreblad") {
+    saveScoreblad();
+  } else if (currentMode==="multi" && roomCode) {
+    update(ref(db,`rooms/${roomCode}/players/${playerId}/state`), state);
+  }
+}
+
+// ── Renderen ──────────────────────────────────────────────────────────────────
+function renderRows() {
+  const root = document.getElementById("rows");
+  root.innerHTML = "";
+  COLORS.forEach(color => {
+    const row = state.rows[color.id];
+    const card = document.createElement("section");
+    card.className = "row-card"; card.style.setProperty("--row-color",color.hex);
+    const head = document.createElement("div"); head.className = "row-head";
+    const title = document.createElement("div"); title.className = "row-title";
+    title.innerHTML = `<span class="dot" style="background:${color.hex}"></span>${color.name}`;
+    const meta = document.createElement("div"); meta.className = "row-meta";
+    const marks = crossedCount(row) + (row.lock==="own"?1:0);
+    meta.innerHTML = `<span>${marks} kruis${marks===1?"":"jes"}</span><span class="row-score">${rowScore(row)} pt</span>`;
+    const ext = document.createElement("button");
+    ext.className = "ext-lock" + (row.lock==="external"?" active":"");
+    ext.textContent = row.lock==="external"?"🔒 Extern gesloten":"🔒 Extern sluiten";
+    ext.onclick = () => toggleExternalLock(color.id);
+    meta.appendChild(ext); head.append(title, meta);
+    const grid = document.createElement("div"); grid.className = "number-grid";
+    color.nums.forEach((num,i)=>{
+      const b = document.createElement("button");
+      b.className = "num"; b.innerHTML = `<span>${num}</span>`;
+      if (row.cells[i]==="cross")  b.classList.add("crossed");
+      if (row.cells[i]==="skip")   b.classList.add("skipped");
+      if (row.lock!=="open"&&row.cells[i]==="open") b.classList.add("locked-out");
+      b.onclick = () => markNumber(color.id, i);
+      grid.appendChild(b);
+    });
+    const lock = document.createElement("div");
+    lock.className = "num lock"; lock.textContent = "🔒";
+    if (row.lock==="own")      lock.classList.add("own");
+    if (row.lock==="external") lock.classList.add("external");
+    grid.appendChild(lock);
+    card.append(head, grid);
+    root.appendChild(card);
+  });
+}
+
+function renderPenalties() {
+  const root = document.getElementById("penalties"); root.innerHTML="";
+  state.penalties.forEach((on,i) => {
+    const b = document.createElement("button");
+    b.className = "penalty"+(on?" on":""); b.innerHTML = `<span>${i+1}</span>`;
+    b.onclick = () => { checkpoint(); state.penalties[i]=!state.penalties[i]; saveState(); render(); };
+    root.appendChild(b);
+  });
+}
+
+function renderSummary() {
+  document.getElementById("playerName").value  = state.playerName||"";
+  document.getElementById("lucky1").value      = state.lucky?.[0]??5;
+  document.getElementById("lucky2").value      = state.lucky?.[1]??8;
+  document.getElementById("totalScore").textContent = totalScore();
+  const status = document.getElementById("gameStatus");
+  if (gameEnded()) {
+    status.className = "game-status ended";
+    status.textContent = `Spel afgelopen · ${state.penalties.filter(Boolean).length>=4?"4 mislukte worpen":"2 gesloten kleuren"}.`;
+  } else {
+    status.className = "game-status";
+    status.textContent = `${state.penalties.filter(Boolean).length}/4 straf · ${closedRows()}/2 kleuren dicht`;
+  }
+  document.getElementById("undoBtn").disabled = history.length===0;
+  // Pass-knop alleen actief als jij aan zet bent
+  if (currentMode==="multi") {
+    const pb = document.getElementById("passBtn");
+    pb.disabled = !amIActive();
+    pb.textContent = amIActive() ? "Beurt doorgeven →" : "Wacht op actieve speler…";
+  }
+}
+
+function render() {
+  renderRows();
+  renderPenalties();
+  renderSummary();
+  if (currentMode==="multi") { renderDice(); renderTurnBar(); }
+}
+
+// ── Invoer ────────────────────────────────────────────────────────────────────
+document.getElementById("playerName").addEventListener("input", e => {
+  state.playerName = e.target.value; saveState();
+});
+["lucky1","lucky2"].forEach((id,idx)=>{
+  document.getElementById(id).addEventListener("change", e=>{
+    let v=Math.max(2,Math.min(16,Number(e.target.value)||(idx?8:5)));
+    state.lucky[idx]=v; e.target.value=v; saveState();
+  });
+});
+
+// ── Knoppen ───────────────────────────────────────────────────────────────────
+document.getElementById("undoBtn").onclick = () => {
+  if (!history.length) return;
+  state = history.pop(); saveState(); render();
+};
+document.getElementById("passBtn").onclick  = passToNext;
+document.getElementById("btnRoll").onclick  = rollDice;
+document.getElementById("resetBtn").onclick = () => {
+  if (!confirm("Dit scoreblad wissen?")) return;
+  checkpoint(); state=freshState(state.playerName); saveState(); render();
+};
+document.getElementById("btnToHome").onclick = () => {
+  if (currentMode==="multi") {
+    if (!confirm("Verlaat het huidige spel?")) return;
+    leaveRoom(); return;
+  }
+  saveScoreblad(); navigate("home"); initHome();
+};
+
+// Startscherm
+document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
+document.getElementById("btnMulti").onclick      = () => navigate("lobby");
+document.getElementById("btnLobbyBack").onclick  = () => navigate("home");
+document.getElementById("btnCreate").onclick     = createRoom;
+document.getElementById("btnJoin").onclick       = joinRoom;
+document.getElementById("joinCode").addEventListener("keydown", e=>{ if(e.key==="Enter") joinRoom(); });
+document.getElementById("btnStartGame").onclick  = startGame;
+document.getElementById("btnLeaveWaiting").onclick = leaveRoom;
+
+// Fullscreen (iOS-proof)
+const fsBtn = document.getElementById("fullscreenBtn");
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+const isStandalone = window.navigator.standalone===true||window.matchMedia("(display-mode:standalone)").matches;
+if (isIOS) {
+  if (isStandalone) { fsBtn.hidden=true; }
+  else { fsBtn.textContent="📱 Voeg toe aan beginscherm"; fsBtn.classList.add("btn-ios-fs"); fsBtn.onclick=()=>showToast("Tik op het deel-icoon (□↑) in Safari → 'Zet op beginscherm'.",4500); }
+} else {
+  fsBtn.onclick = async()=>{ try{ document.fullscreenElement?await document.exitFullscreen():await document.documentElement.requestFullscreen(); }catch(e){ showToast("Volledig scherm niet ondersteund."); } };
+}
+
+// PWA install
+let deferredPrompt=null;
+const installBtn=document.getElementById("installBtn");
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); deferredPrompt=e; installBtn.hidden=false; });
+installBtn.onclick=async()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; installBtn.hidden=true; };
+window.addEventListener("appinstalled",()=>{ installBtn.hidden=true; });
+if ("serviceWorker" in navigator) { window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").then(r=>r.update()).catch(()=>{}); }); }
+
+// ── Opstarten ─────────────────────────────────────────────────────────────────
+initHome();
+</script>
 </body>
 </html>
