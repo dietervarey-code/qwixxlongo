@@ -675,7 +675,14 @@ async function startGame() {
   try {
     const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
     const firstId = players[0][0];
-    await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1, dicePhase:"rolling" });
+    // Wijs geluksgetallen willekeurig toe aan elke speler (2 per speler, 2–12)
+    const luckyNumbers = {};
+    players.forEach(([pid]) => {
+      const n1 = Math.floor(Math.random()*11)+2;
+      let n2; do { n2 = Math.floor(Math.random()*11)+2; } while (n2===n1);
+      luckyNumbers[pid] = [n1, n2];
+    });
+    await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1, dicePhase:"rolling", luckyNumbers });
   } catch(e) {
     console.error("startGame:", e);
     showToast("❌ Starten mislukt. Probeer opnieuw.");
@@ -796,16 +803,32 @@ function renderDice() {
   }
 
   if (phase === "whites") {
-    const ww = dice.w1 + dice.w2;
+    const ww      = dice.w1 + dice.w2;
+    const myLucky = getMyLuckyNumbers();
+    const lucky   = isLuckyWhiteRoll();
     // Prominent de wit-som tonen
     const wwEl = document.createElement("span");
     wwEl.className = "combo for-all";
-    wwEl.innerHTML = `<b>⚪+⚪ = ${ww}</b> — klik dit vakje aan in een kleur, of sla over`;
+    wwEl.innerHTML = `<b>⚪+⚪ = ${ww}</b>${lucky ? " ⭐ Geluksgetal!" : ""} — klik dit vakje aan in een kleur, of sla over`;
     combos.appendChild(wwEl);
+
+    // Geluksgetallen tonen
+    if (myLucky.length) {
+      addCombo(combos, `Jouw geluksgetallen: ⭐${myLucky.join(" & ")}`, "for-all");
+    }
 
     if (madeWhiteDecision) {
       addCombo(combos, allDone ? "✓ Iedereen klaar — kleurfase start…" : `✓ Jij klaar (${donePids.length}/${allPids.length})`, "for-all");
     } else {
+      // Geluksbonus-knop (alleen als geluksgetal valt)
+      if (lucky) {
+        const luckyBtn = document.createElement("button");
+        luckyBtn.className = "btn";
+        luckyBtn.style.cssText = "font-size:.82rem;padding:3px 12px;margin-left:4px;background:#f59e0b;color:#fff;border:none";
+        luckyBtn.textContent = "⭐ Gebruik geluksbonus (minste rij)";
+        luckyBtn.onclick = applyLuckyBonus;
+        combos.appendChild(luckyBtn);
+      }
       // Sla-over knop
       const skipBtn = document.createElement("button");
       skipBtn.className = "btn btn-muted";
@@ -821,16 +844,21 @@ function renderDice() {
     if (isActive) {
       const colorUsed = markedThisTurn.some(m => m.startsWith("color:"));
       if (colorUsed) {
-        addCombo(combos, "✓ Kleur aangevinkt. Geef door als je klaar bent.", "for-all");
+        addCombo(combos, "✓ Kleur aangevinkt — beurt wordt doorgegeven…", "for-all");
       } else {
-        addCombo(combos, "Kies optioneel een kleurcombo, of geef meteen door:", "for-all");
+        addCombo(combos, "Kies optioneel een kleurcombo:", "for-all");
         COLORS.forEach(c => {
           const v1 = dice.w1 + dice[c.id], v2 = dice.w2 + dice[c.id];
-          const extra = dice.w1 + dice.w2 + dice[c.id];
           const vals = v1===v2 ? [v1] : [v1,v2];
           vals.forEach(v => { if(v>=2&&v<=18) addCombo(combos, `⚪+${c.name}: ${v}`, "for-all"); });
-          if (extra>=2&&extra<=18) addCombo(combos, `⚪+⚪+${c.name}: ${extra}`, "active-extra");
         });
+        // Sla kleur over = beurt doorgeven zonder kleurcombo
+        const skipColorBtn = document.createElement("button");
+        skipColorBtn.className = "btn btn-muted";
+        skipColorBtn.style.cssText = "font-size:.82rem;padding:3px 10px;margin-left:4px";
+        skipColorBtn.textContent = "✗ Sla kleur over →";
+        skipColorBtn.onclick = passToNext;
+        combos.appendChild(skipColorBtn);
       }
     } else {
       addCombo(combos, `Wachten op kleurcombo van ${activeName}…`, "for-all");
@@ -959,7 +987,7 @@ function getValidNumbers(colorId) {
     if (!amIActive()) return new Set(); // niet-actieve speler: niets meer
     // Actieve speler: ⚪+kleur en ⚪+⚪+kleur (GEEN ⚪+⚪, dat was de witfase)
     const valid = new Set();
-    [d.w1 + d[colorId], d.w2 + d[colorId], d.w1 + d.w2 + d[colorId]]
+    [d.w1 + d[colorId], d.w2 + d[colorId]]
       .forEach(v => { if (v >= 2 && v <= 18) valid.add(v); });
     return valid;
   }
@@ -973,6 +1001,65 @@ function checkTurnReset() {
     markedThisTurn    = [];
     madeWhiteDecision = false;
   }
+}
+
+// ── Geluksgetallen ─────────────────────────────────────────────────────────────
+function getMyLuckyNumbers() {
+  if (currentMode === "multi" && roomData?.luckyNumbers?.[playerId]) {
+    return roomData.luckyNumbers[playerId];
+  }
+  return state.lucky || [];
+}
+
+function isLuckyWhiteRoll() {
+  if (currentMode !== "multi" || !roomData?.dice?.rolled) return false;
+  const ww = (roomData.dice.w1 || 0) + (roomData.dice.w2 || 0);
+  return getMyLuckyNumbers().some(n => n === ww);
+}
+
+async function applyLuckyBonus() {
+  // Geluksbonus: markeer het eerstvolgende vakje in de rij met de minste kruisjes
+  if (madeWhiteDecision) { showToast("Je hebt al beslist voor ⚪+⚪."); return; }
+
+  let minCrosses = Infinity;
+  let bestColorId = null;
+  let bestIndex   = -1;
+
+  COLORS.forEach(c => {
+    const row   = state.rows[c.id];
+    if (row.lock !== "open") return;
+    const count = crossedCount(row);
+    if (count >= minCrosses) return;
+    const lastP = latestProg(row);
+    for (let i = lastP + 1; i < row.cells.length; i++) {
+      if (row.cells[i] === "open") {
+        if (i < 13 || count >= 6) { // respecteer de 6-kruisjes-regel
+          minCrosses  = count;
+          bestColorId = c.id;
+          bestIndex   = i;
+        }
+        break;
+      }
+    }
+  });
+
+  if (bestColorId === null || bestIndex < 0) {
+    showToast("⭐ Geen beschikbare rij voor geluksbonus."); return;
+  }
+
+  checkpoint();
+  const row = state.rows[bestColorId];
+  for (let i = 0; i < bestIndex; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+  row.cells[bestIndex] = "cross";
+
+  markedThisTurn.push(bestColorId);
+  if (!madeWhiteDecision) {
+    madeWhiteDecision = true;
+    set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+  }
+  saveState();
+  render();
+  showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === bestColorId).name}!`);
 }
 
 // ── Scoreblad: nummers aanvinken ───────────────────────────────────────────────
@@ -1015,7 +1102,7 @@ function markNumber(colorId, index) {
         showToast("Je hebt al een kleurscore gebruikt deze beurt."); return;
       }
       const validVals = new Set(
-        [d.w1+d[colorId], d.w2+d[colorId], d.w1+d.w2+d[colorId]].filter(v=>v>=2&&v<=18)
+        [d.w1+d[colorId], d.w2+d[colorId]].filter(v=>v>=2&&v<=18)
       );
       if (!validVals.has(num)) {
         const list = [...validVals].sort((a,b)=>a-b).join(", ");
@@ -1055,6 +1142,11 @@ function markNumber(colorId, index) {
   }
   saveState();
   render();
+
+  // Auto-doorgeven na kleurfase (actieve speler heeft gekozen)
+  if (currentMode === "multi" && roomData?.dicePhase === "colors" && amIActive()) {
+    setTimeout(() => passToNext(), 350);
+  }
 }
 
 function toggleExternalLock(colorId) {
@@ -1140,8 +1232,15 @@ function renderPenalties() {
 
 function renderSummary() {
   document.getElementById("playerName").value  = state.playerName||"";
-  document.getElementById("lucky1").value      = state.lucky?.[0]??5;
-  document.getElementById("lucky2").value      = state.lucky?.[1]??8;
+  // In multi: geluksgetallen komen willekeurig van de host (read-only)
+  const myLucky = getMyLuckyNumbers();
+  document.getElementById("lucky1").value      = myLucky[0] ?? state.lucky?.[0] ?? 5;
+  document.getElementById("lucky2").value      = myLucky[1] ?? state.lucky?.[1] ?? 8;
+  const luckyReadOnly = currentMode === "multi";
+  document.getElementById("lucky1").readOnly   = luckyReadOnly;
+  document.getElementById("lucky2").readOnly   = luckyReadOnly;
+  document.getElementById("lucky1").title      = luckyReadOnly ? "Willekeurig toegewezen geluksgetal" : "";
+  document.getElementById("lucky2").title      = luckyReadOnly ? "Willekeurig toegewezen geluksgetal" : "";
   document.getElementById("totalScore").textContent = totalScore();
   const status = document.getElementById("gameStatus");
   if (gameEnded()) {
