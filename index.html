@@ -116,6 +116,8 @@
     .num.lock{border-style:dashed;background:#f9fafb;color:#111827;border-color:#9ca3af;font-size:1.1rem}
     .num.lock.own{background:#111827;color:#fff;border-color:#111827;border-style:solid}
     .num.lock.external{background:#6b7280;color:#fff;border-color:#6b7280;border-style:solid}
+    .num.valid-pick{box-shadow:0 0 0 3px var(--row-color);z-index:1;position:relative}
+    .num.not-valid{opacity:.18;pointer-events:none}
 
     /* Onderste balk */
     .bottom-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:start;background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -411,6 +413,10 @@ let state;             // actief scoreblad
 let history = [];
 let toastTimer;
 
+// Multiplayer beurt-tracking (reset bij elke nieuwe beurt)
+let currentTurnNumber = null;
+let markedThisTurn    = []; // colorIds die deze beurt aangekruist zijn
+
 localStorage.setItem(PLAYER_ID_KEY, playerId);
 
 // ── State helpers ─────────────────────────────────────────────────────────────
@@ -591,6 +597,12 @@ function listenToRoom() {
             }
           }
         });
+      }
+
+      // Reset beurtmarkeringen bij nieuwe beurt
+      if (roomData.turnNumber !== currentTurnNumber) {
+        currentTurnNumber = roomData.turnNumber ?? null;
+        markedThisTurn = [];
       }
 
       const curScreen = document.querySelector(".screen.active")?.id;
@@ -805,6 +817,20 @@ function renderTurnBar() {
 // ── Beurt doorgeven ────────────────────────────────────────────────────────────
 async function passToNext() {
   if (!amIActive()) { showToast("Het is jouw beurt niet."); return; }
+  if (!roomData?.dice?.rolled) { showToast("⚠️ Gooi eerst de dobbelstenen."); return; }
+
+  // Actieve speler moet iets aanvinken of strafpunt nemen
+  if (markedThisTurn.length === 0) {
+    if (!confirm("Je hebt niets aangevinkt.\nWil je een mislukte worp nemen? (−5 punten)")) return;
+    const firstEmpty = state.penalties.findIndex(p => !p);
+    if (firstEmpty >= 0) {
+      checkpoint();
+      state.penalties[firstEmpty] = true;
+      saveState();
+      render();
+    }
+  }
+
   const btn = document.getElementById("passBtn");
   btn.disabled = true;
   try {
@@ -846,6 +872,31 @@ function renderEndGame() {
   document.getElementById("gameStatus").textContent = `Spel afgelopen · ${winner.name} wint met ${winner.score}pt`;
 }
 
+// ── Spelregel-helpers (multiplayer) ──────────────────────────────────────────
+function getValidNumbers(colorId) {
+  // Geeft Set met geldige nummers terug, of null als er geen beperking is (scoreblad-modus)
+  if (currentMode !== "multi" || !roomData?.dice?.rolled) return null;
+  const d = roomData.dice;
+  const valid = new Set();
+  if (amIActive()) {
+    // Actieve speler: ⚪+⚪, ⚪+kleur, ⚪+⚪+kleur
+    [d.w1 + d.w2, d.w1 + d[colorId], d.w2 + d[colorId], d.w1 + d.w2 + d[colorId]]
+      .forEach(v => { if (v >= 2 && v <= 18) valid.add(v); });
+  } else {
+    // Niet-actieve speler: alleen ⚪+⚪
+    const ww = d.w1 + d.w2;
+    if (ww >= 2 && ww <= 18) valid.add(ww);
+  }
+  return valid;
+}
+
+function checkTurnReset() {
+  if (roomData?.turnNumber !== currentTurnNumber) {
+    currentTurnNumber = roomData?.turnNumber ?? null;
+    markedThisTurn = [];
+  }
+}
+
 // ── Scoreblad: nummers aanvinken ───────────────────────────────────────────────
 function markNumber(colorId, index) {
   const row = state.rows[colorId];
@@ -854,13 +905,57 @@ function markNumber(colorId, index) {
   if (cur!=="open") { showToast(cur==="cross"?"Al aangekruist.":"Al voorbij."); return; }
   if (index<=latestProg(row)) { showToast("Je kunt alleen naar rechts."); return; }
   if (index>=13 && crossedCount(row)<6) { showToast("Je hebt eerst 6 kruisjes nodig voor de laatste twee."); return; }
+
+  // ── Multiplayer spelregelcontrole ──────────────────────────────────────────
+  if (currentMode === "multi") {
+    if (!roomData?.dice?.rolled) {
+      showToast("⚠️ Wacht tot de dobbelstenen gegooid zijn.");
+      return;
+    }
+    checkTurnReset();
+    const color  = COLORS.find(c => c.id === colorId);
+    const num    = color.nums[index];
+    const d      = roomData.dice;
+    const active = amIActive();
+
+    if (active) {
+      // Actieve speler: ⚪+⚪, ⚪+kleur of ⚪+⚪+kleur
+      const validVals = new Set(
+        [d.w1+d.w2, d.w1+d[colorId], d.w2+d[colorId], d.w1+d.w2+d[colorId]]
+          .filter(v => v>=2 && v<=18)
+      );
+      if (!validVals.has(num)) {
+        const list = [...validVals].sort((a,b)=>a-b).join(", ");
+        showToast(`❌ ${num} klopt niet. Geldige waarden voor ${color.name}: ${list}`);
+        return;
+      }
+      if (markedThisTurn.includes(colorId)) {
+        showToast(`Je hebt ${color.name.toLowerCase()} al aangekruist deze beurt.`);
+        return;
+      }
+    } else {
+      // Niet-actieve speler: alleen ⚪+⚪, max 1 kruis
+      if (markedThisTurn.length >= 1) {
+        showToast("Je mag maar 1 vakje aanvinken als het niet jouw beurt is.");
+        return;
+      }
+      const ww = d.w1 + d.w2;
+      if (num !== ww) {
+        showToast(`❌ Niet jouw beurt. Alleen ⚪+⚪ = ${ww} is geldig.`);
+        return;
+      }
+    }
+  }
+  // ──────────────────────────────────────────────────────────────────────────
+
   checkpoint();
   for(let i=0;i<index;i++) if(row.cells[i]==="open") row.cells[i]="skip";
   row.cells[index]="cross";
+  if (currentMode === "multi") markedThisTurn.push(colorId);
+
   if (index>=13) {
     row.lock="own";
     for(let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
-    // Broadcast global lock
     if (currentMode==="multi") {
       set(ref(db,`rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy:playerId }).catch(console.error);
     }
@@ -910,12 +1005,24 @@ function renderRows() {
     ext.onclick = () => toggleExternalLock(color.id);
     meta.appendChild(ext); head.append(title, meta);
     const grid = document.createElement("div"); grid.className = "number-grid";
+    const validNums      = getValidNumbers(color.id);
+    const colorMarked    = currentMode === "multi" && markedThisTurn.includes(color.id);
+    const nonActiveMaxed = currentMode === "multi" && !amIActive() && markedThisTurn.length >= 1;
+    const lastProg       = latestProg(row);
     color.nums.forEach((num,i)=>{
       const b = document.createElement("button");
       b.className = "num"; b.innerHTML = `<span>${num}</span>`;
       if (row.cells[i]==="cross")  b.classList.add("crossed");
       if (row.cells[i]==="skip")   b.classList.add("skipped");
       if (row.lock!=="open"&&row.cells[i]==="open") b.classList.add("locked-out");
+      // Highlight geldige/ongeldige vakjes in multiplayer
+      if (validNums !== null && row.cells[i]==="open" && row.lock==="open" && i > lastProg) {
+        if (validNums.has(num) && !colorMarked && !nonActiveMaxed) {
+          b.classList.add("valid-pick");
+        } else {
+          b.classList.add("not-valid");
+        }
+      }
       b.onclick = () => markNumber(color.id, i);
       grid.appendChild(b);
     });
