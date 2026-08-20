@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111827" />
   <meta name="description" content="Fan-made, interactief en volledig offline digitaal scoreblad voor Qwixx Longo." />
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -14,57 +12,113 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Qwixx Longo" />
   <meta name="mobile-web-app-capable" content="yes" />
-
   <title>Qwixx Longo – digitaal scoreblad</title>
   <style>
     :root{
-      --bg:#f3f4f6;
-      --card:#ffffff;
-      --ink:#111827;
-      --muted:#6b7280;
-      --line:#d1d5db;
-      --red:#dc2626;
-      --yellow:#eab308;
-      --green:#16a34a;
-      --blue:#2563eb;
-      --danger:#b91c1c;
-      --shadow:0 10px 28px rgba(17,24,39,.09);
-      --radius:16px;
+      --bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#6b7280;
+      --red:#dc2626;--yellow:#ca8a04;--green:#16a34a;--blue:#2563eb;
+      --danger:#b91c1c;--shadow:0 10px 28px rgba(17,24,39,.09);--radius:16px;
     }
     *{box-sizing:border-box}
-    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    html,body{margin:0;background:var(--bg);color:var(--ink);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}
     body{min-height:100vh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
     button,input{font:inherit}
     button{touch-action:manipulation}
-    .app{width:min(1180px,100%);margin:0 auto;padding:10px}
 
-    /* ── Kleurrijrijen (het spel, direct bovenaan) ── */
-    .rows{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
-    .row-card{
-      background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);
-      padding:12px 14px;box-shadow:var(--shadow)
+    /* ── Schermen ── */
+    .screen{display:none;width:min(1180px,100%);margin:0 auto;padding:14px}
+    .screen.active{display:block}
+
+    /* ── Startscherm ── */
+    .home-wrap{
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:center;min-height:100dvh;gap:28px;padding:20px
     }
+    .home-brand{text-align:center}
+    .home-brand h1{margin:0 0 4px;font-size:clamp(1.8rem,5vw,2.8rem);letter-spacing:-.04em}
+    .home-brand p{margin:0;color:var(--muted);font-size:.95rem}
+    .mode-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;width:min(680px,100%)}
+    .mode-card{
+      background:var(--card);border:2px solid #e5e7eb;border-radius:var(--radius);
+      padding:22px 18px;text-align:left;cursor:pointer;transition:border-color .15s,transform .1s;
+      display:flex;flex-direction:column;gap:6px;position:relative;
+    }
+    .mode-card:hover{border-color:#9ca3af;transform:translateY(-2px)}
+    .mode-card:active{transform:scale(.98)}
+    .mode-card .mode-icon{font-size:2rem;line-height:1;margin-bottom:2px}
+    .mode-card .mode-title{font-size:1.15rem;font-weight:900;letter-spacing:-.02em}
+    .mode-card .mode-desc{color:var(--muted);font-size:.86rem;line-height:1.45}
+    .mode-card .badge{
+      position:absolute;top:12px;right:12px;background:#f59e0b;color:#fff;
+      font-size:.65rem;font-weight:800;padding:2px 7px;border-radius:999px;letter-spacing:.03em
+    }
+    .mode-card.disabled{opacity:.55;cursor:not-allowed;pointer-events:none}
+    .saved-notice{
+      background:var(--card);border:1px solid #e5e7eb;border-radius:10px;
+      padding:10px 16px;font-size:.85rem;color:var(--muted);display:flex;gap:10px;align-items:center;
+      width:min(680px,100%)
+    }
+    .saved-notice b{color:var(--ink)}
+    .saved-notice button{margin-left:auto;background:none;border:1px solid #d1d5db;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.8rem;font-weight:700}
+
+    /* ── Multiplayer setup ── */
+    .setup-wrap{max-width:460px;margin:0 auto;padding-top:24px}
+    .setup-wrap h2{font-size:1.4rem;font-weight:900;margin:0 0 4px}
+    .setup-wrap p{color:var(--muted);font-size:.9rem;margin:0 0 18px}
+    .player-count-row{display:flex;gap:8px;margin-bottom:18px}
+    .count-btn{
+      flex:1;padding:10px 0;border:2px solid #d1d5db;border-radius:10px;
+      background:#fff;font-weight:800;font-size:1rem;cursor:pointer
+    }
+    .count-btn.active{border-color:var(--ink);background:var(--ink);color:#fff}
+    .player-inputs{display:flex;flex-direction:column;gap:8px;margin-bottom:20px}
+    .player-input-row{display:flex;align-items:center;gap:10px}
+    .player-num{
+      width:30px;height:30px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-weight:900;font-size:.85rem;flex-shrink:0;color:#fff
+    }
+    .p-color-0{background:var(--red)}
+    .p-color-1{background:var(--blue)}
+    .p-color-2{background:var(--green)}
+    .p-color-3{background:var(--yellow)}
+
+    /* ── Handoff scherm ── */
+    .handoff-wrap{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;
+      min-height:100dvh;gap:20px;text-align:center;padding:24px
+    }
+    .handoff-avatar{
+      width:80px;height:80px;border-radius:50%;display:flex;align-items:center;
+      justify-content:center;font-size:2.2rem;font-weight:900;color:#fff;margin-bottom:4px
+    }
+    .handoff-wrap h2{font-size:1.8rem;font-weight:900;margin:0;letter-spacing:-.03em}
+    .handoff-wrap p{color:var(--muted);font-size:.95rem;margin:0}
+
+    /* ── Spel: speler-indicator (multiplayer) ── */
+    .player-bar{
+      display:flex;align-items:center;gap:12px;
+      background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);
+      padding:10px 14px;margin-bottom:10px;box-shadow:var(--shadow)
+    }
+    .player-bar-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+    .player-bar-name{font-weight:900;font-size:1rem;flex:1}
+    .player-bar-sub{color:var(--muted);font-size:.82rem}
+    .player-bar-scores{display:flex;gap:12px;font-size:.82rem;font-weight:700;color:var(--muted)}
+    .player-bar-scores span{color:var(--ink)}
+
+    /* ── Scoreblad UI ── */
+    .rows{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+    .row-card{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
     .row-head{display:flex;align-items:center;gap:10px;justify-content:space-between;margin-bottom:8px}
     .row-title{display:flex;align-items:center;gap:9px;font-weight:900;font-size:1.05rem}
     .dot{width:13px;height:13px;border-radius:999px;display:inline-block;flex-shrink:0}
     .row-meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:.88rem;font-weight:700}
     .row-score{color:var(--ink)}
-    .external-lock{
-      border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:5px 10px;
-      font-size:.78rem;font-weight:800;cursor:pointer;color:var(--muted);flex-shrink:0
-    }
+    .external-lock{border:1px solid #d1d5db;background:#fff;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:800;cursor:pointer;color:var(--muted);flex-shrink:0}
     .external-lock.active{background:#111827;color:#fff;border-color:#111827}
-
-    .number-grid{
-      display:grid;grid-template-columns:repeat(16,minmax(42px,1fr));gap:5px;
-      overflow-x:auto;padding-bottom:2px
-    }
-    .num{
-      aspect-ratio:1/1;min-width:42px;border:2px solid var(--row-color);border-radius:10px;
-      background:#fff;color:var(--row-color);font-weight:900;font-size:1rem;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;position:relative;user-select:none;
-      transition:transform .08s ease,background .15s ease,color .15s ease,opacity .15s ease
-    }
+    .number-grid{display:grid;grid-template-columns:repeat(16,minmax(42px,1fr));gap:5px;overflow-x:auto;padding-bottom:2px}
+    .num{aspect-ratio:1/1;min-width:42px;border:2px solid var(--row-color);border-radius:10px;background:#fff;color:var(--row-color);font-weight:900;font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;user-select:none;transition:transform .08s ease,background .15s ease,color .15s ease,opacity .15s ease}
     .num:active{transform:scale(.93)}
     .num.crossed{background:var(--row-color);color:#fff}
     .num.crossed::after{content:"×";position:absolute;font-size:1.8rem;line-height:1;color:#fff;font-weight:900}
@@ -77,75 +131,51 @@
     .num.lock.external{background:#6b7280;color:#fff;border-color:#6b7280;border-style:solid}
 
     /* ── Onderste balk ── */
-    .bottom-bar{
-      display:grid;
-      grid-template-columns:auto 1fr auto auto;
-      gap:12px;align-items:start;
-      background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);
-      padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px;
-    }
-
+    .bottom-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:start;background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
     .field-label{display:block;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px}
-
-    /* Mislukte worpen */
     .penalties{display:flex;gap:7px}
-    .penalty{
-      width:40px;height:40px;border:2px solid #9ca3af;border-radius:9px;background:#fff;
-      color:#9ca3af;font-weight:900;cursor:pointer;position:relative;flex-shrink:0
-    }
+    .penalty{width:40px;height:40px;border:2px solid #9ca3af;border-radius:9px;background:#fff;color:#9ca3af;font-weight:900;cursor:pointer;position:relative;flex-shrink:0}
     .penalty.on{background:#111827;border-color:#111827;color:#fff}
     .penalty.on::after{content:"×";position:absolute;inset:0;display:grid;place-items:center;font-size:1.7rem}
     .penalty.on span{opacity:.25}
-
-    /* Speler & geluk */
     .player-wrap{display:flex;flex-direction:column;gap:6px}
-    .name-input,.lucky-input{
-      width:100%;border:1px solid #d1d5db;border-radius:9px;padding:8px 11px;background:#fff;
-      color:var(--ink);font-weight:700;outline:none
-    }
+    .name-input,.lucky-input{width:100%;border:1px solid #d1d5db;border-radius:9px;padding:8px 11px;background:#fff;color:var(--ink);font-weight:700;outline:none}
     .name-input:focus,.lucky-input:focus{border-color:#9ca3af;box-shadow:0 0 0 3px rgba(17,24,39,.06)}
     .lucky-wrap{display:grid;grid-template-columns:1fr 1fr;gap:7px}
     .lucky-star{position:relative}
     .lucky-star::before{content:"★";position:absolute;left:9px;top:50%;transform:translateY(-50%);color:#f59e0b;font-size:1rem;pointer-events:none}
     .lucky-input{padding-left:29px}
-
-    /* Totaalscore */
     .score-wrap{display:flex;flex-direction:column;gap:3px}
     .score-total{display:flex;align-items:baseline;gap:5px}
     .score-total strong{font-size:2rem;line-height:1}
     .score-total span{color:var(--muted);font-weight:700}
     .game-status{font-size:.8rem;color:var(--muted);white-space:nowrap}
     .game-status.ended{color:var(--danger);font-weight:800}
-
-    /* Actieknoppen */
     .action-wrap{display:flex;flex-direction:column;gap:7px}
-    .btn{
-      border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:10px;
-      padding:8px 12px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:.88rem;
-      text-align:center
-    }
+
+    /* ── Knoppen ── */
+    .btn{border:1px solid #d1d5db;background:#fff;color:var(--ink);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:.9rem;text-align:center}
     .btn:hover{background:#f9fafb}
+    .btn:active{transform:scale(.97)}
     .btn:disabled{opacity:.40;cursor:not-allowed}
+    .btn-primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+    .btn-primary:hover{background:#374151}
     .btn-danger{color:var(--danger)}
-    /* iOS-hint knop */
+    .btn-pass{background:#16a34a;color:#fff;border-color:#16a34a;font-size:1rem;padding:12px 18px}
+    .btn-pass:hover{background:#15803d}
     .btn-ios-fs{color:#2563eb;border-color:#bfdbfe;background:#eff6ff}
     .btn-ios-fs:hover{background:#dbeafe}
+    .btn-home{color:var(--muted);font-size:.82rem}
 
     /* ── Legenda ── */
     .legend{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
     .panel{background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
     .legend p{margin:.2rem 0;color:var(--muted);font-size:.85rem;line-height:1.5}
     .legend b{color:var(--ink)}
-
     .footer{color:var(--muted);font-size:.72rem;text-align:center;padding:8px 6px 12px}
 
-    .toast{
-      position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));
-      transform:translateX(-50%) translateY(20px);
-      background:#111827;color:#fff;padding:11px 16px;border-radius:10px;font-weight:800;
-      opacity:0;pointer-events:none;transition:.2s ease;z-index:99;box-shadow:var(--shadow);
-      max-width:min(90vw,560px);text-align:center;font-size:.95rem
-    }
+    /* ── Toast ── */
+    .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:11px 16px;border-radius:10px;font-weight:800;opacity:0;pointer-events:none;transition:.2s ease;z-index:99;box-shadow:var(--shadow);max-width:min(90vw,560px);text-align:center;font-size:.95rem}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
     /* ── Responsive ── */
@@ -156,18 +186,15 @@
       .action-wrap .btn{flex:1}
     }
     @media (max-width:600px){
-      .app{padding:7px}
+      .screen{padding:7px}
       .bottom-bar{grid-template-columns:1fr;gap:10px}
       .legend{grid-template-columns:1fr}
       .number-grid{grid-template-columns:repeat(16,40px)}
       .action-wrap{flex-direction:row}
       .action-wrap .btn{flex:1}
     }
-
-    /* ── Landscape op telefoon: alle 4 kleuren in één scherm ── */
     @media (orientation:landscape) and (max-height:520px){
-      .app{padding:4px 6px}
-      /* Rijen compact */
+      .screen{padding:4px 6px}
       .rows{gap:4px;margin-bottom:4px}
       .row-card{padding:4px 8px;border-radius:10px}
       .row-head{margin-bottom:3px}
@@ -175,61 +202,115 @@
       .dot{width:10px;height:10px}
       .row-meta{font-size:.72rem;gap:6px}
       .external-lock{padding:2px 7px;font-size:.66rem}
-      /* Getallen kleiner */
       .number-grid{gap:3px;grid-template-columns:repeat(16,minmax(28px,1fr))}
       .num{min-width:28px;font-size:.78rem;border-radius:7px;border-width:1.5px}
       .num.crossed::after{font-size:1.2rem}
       .num.lock{font-size:.85rem}
-      /* Onderste balk: compacte enkele rij */
-      .bottom-bar{
-        grid-template-columns:auto auto 1fr;
-        grid-template-rows:auto;
-        padding:5px 10px;gap:10px;
-        margin-bottom:4px;border-radius:10px;
-        align-items:center
-      }
-      /* Verberg alleen naam — geluksgetallen blijven zichtbaar */
+      .player-bar{padding:6px 10px;margin-bottom:5px;border-radius:10px}
+      .player-bar-name{font-size:.88rem}
+      .bottom-bar{grid-template-columns:auto auto 1fr;grid-template-rows:auto;padding:5px 10px;gap:10px;margin-bottom:4px;border-radius:10px;align-items:center}
       .player-wrap{gap:3px}
       .player-wrap>div:first-child{display:none}
+      .lucky-wrap{gap:4px}
+      .lucky-input{padding:4px 8px 4px 26px;font-size:.8rem}
+      .lucky-star::before{font-size:.85rem;left:7px}
       .score-wrap{align-self:center}
       .score-total strong{font-size:1.4rem}
       .game-status{font-size:.7rem}
       .action-wrap{flex-direction:row;align-self:center;gap:5px}
       .action-wrap .btn{padding:5px 8px;font-size:.76rem}
       .field-label{font-size:.62rem;margin-bottom:3px}
-      .lucky-wrap{gap:4px}
-      .lucky-input{padding:4px 8px 4px 26px;font-size:.8rem}
-      .lucky-star::before{font-size:.85rem;left:7px}
-      /* Penalties kleiner */
       .penalties{gap:5px}
       .penalty{width:30px;height:30px;border-radius:7px}
       .penalty.on::after{font-size:1.2rem}
-      /* Legenda + footer verbergen */
       .legend,.footer{display:none}
     }
-
     @media print{
-      .action-wrap,.external-lock,.footer,.legend{display:none!important}
-      .app{width:100%;padding:0}
+      .action-wrap,.external-lock,.footer,.legend,.player-bar,.home-wrap{display:none!important}
+      .screen{width:100%;padding:0}
       .panel,.row-card,.bottom-bar{box-shadow:none}
       body{background:#fff}
     }
   </style>
 </head>
 <body>
-  <main class="app">
 
-    <!-- De 4 kleurrijrijen — direct bovenaan, geen header -->
+  <!-- ══ STARTSCHERM ══ -->
+  <div id="screen-home" class="screen active">
+    <div class="home-wrap">
+      <div class="home-brand">
+        <h1>🎲 Qwixx Longo</h1>
+        <p>Fan-made digitaal scoreblad · volledig offline</p>
+      </div>
+
+      <div class="mode-grid">
+        <button class="mode-card" id="btnScoreblad">
+          <div class="mode-icon">📋</div>
+          <div class="mode-title">Scoreblad</div>
+          <div class="mode-desc">Gebruik eigen dobbelstenen en vul je score zelf in. Eén speler.</div>
+        </button>
+        <button class="mode-card" id="btnMulti">
+          <div class="mode-icon">👥</div>
+          <div class="mode-title">Multiplayer</div>
+          <div class="mode-desc">2–4 spelers op één toestel. Elk zijn eigen scoreblad, beurtengewijs.</div>
+        </button>
+        <button class="mode-card disabled">
+          <div class="mode-icon">🎯</div>
+          <div class="mode-title">Solo</div>
+          <div class="mode-desc">Speel alleen met virtuele dobbelstenen en beurtenlogica.</div>
+          <span class="badge">Binnenkort</span>
+        </button>
+      </div>
+
+      <div id="savedNotice" class="saved-notice" style="display:none">
+        <span>📂 Lopend spel gevonden: <b id="savedLabel"></b></span>
+        <button id="btnResume">Doorgaan →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ MULTIPLAYER SETUP ══ -->
+  <div id="screen-multi-setup" class="screen">
+    <div class="setup-wrap">
+      <button class="btn btn-home" id="btnSetupBack">← Terug</button>
+      <h2 style="margin-top:14px">Spelers instellen</h2>
+      <p>Hoeveel spelers doen er mee?</p>
+      <div class="player-count-row" id="countBtns"></div>
+      <div class="player-inputs" id="playerInputs"></div>
+      <button class="btn btn-primary" id="btnStartMulti" style="width:100%;padding:13px">Spel starten →</button>
+    </div>
+  </div>
+
+  <!-- ══ HANDOFF (geef toestel door) ══ -->
+  <div id="screen-handoff" class="screen">
+    <div class="handoff-wrap">
+      <div class="handoff-avatar" id="handoffAvatar"></div>
+      <h2 id="handoffTitle"></h2>
+      <p id="handoffSub">Klap het scherm even weg terwijl je doorgeeft.</p>
+      <button class="btn btn-primary" id="btnHandoffReady" style="padding:14px 32px;font-size:1.05rem;margin-top:8px">Klaar! →</button>
+    </div>
+  </div>
+
+  <!-- ══ SPEELSCHERM ══ -->
+  <div id="screen-game" class="screen">
+
+    <!-- Speler-indicator (alleen in multiplayer) -->
+    <div class="player-bar" id="playerBar" style="display:none">
+      <div class="player-bar-dot" id="playerBarDot"></div>
+      <div>
+        <div class="player-bar-name" id="playerBarName"></div>
+        <div class="player-bar-sub" id="playerBarSub"></div>
+      </div>
+      <div class="player-bar-scores" id="playerBarScores"></div>
+    </div>
+
     <section id="rows" class="rows"></section>
 
-    <!-- Onderste balk: alles op één plek -->
     <div class="bottom-bar">
-
       <div>
         <span class="field-label">Mislukte worpen</span>
         <div class="penalties" id="penalties"></div>
       </div>
-
       <div class="player-wrap">
         <div>
           <label class="field-label" for="playerName">Speler</label>
@@ -243,23 +324,21 @@
           </div>
         </div>
       </div>
-
       <div class="score-wrap">
         <span class="field-label">Totaal</span>
         <div class="score-total"><strong id="totalScore">0</strong><span>pt</span></div>
         <div id="gameStatus" class="game-status">Spel loopt.</div>
       </div>
-
       <div class="action-wrap">
         <button class="btn" id="undoBtn">↶ Ongedaan</button>
+        <button class="btn btn-pass" id="passBtn" style="display:none">Beurt doorgeven →</button>
         <button class="btn" id="fullscreenBtn">⛶ Volledig scherm</button>
         <button class="btn btn-danger" id="resetBtn">↺ Reset</button>
-        <button class="btn" id="installBtn" hidden>⬇ Installeer app</button>
+        <button class="btn btn-home" id="btnToHome">⌂ Home</button>
+        <button class="btn" id="installBtn" hidden>⬇ Installeer</button>
       </div>
-
     </div>
 
-    <!-- Legenda -->
     <section class="legend">
       <div class="panel">
         <span class="field-label">Bediening</span>
@@ -275,318 +354,395 @@
       </div>
     </section>
 
-    <div class="footer">🎲 Qwixx Longo · fan-made digitaal scoreblad · geen officiële vormgeving of artwork</div>
-  </main>
+    <div class="footer">🎲 Qwixx Longo · fan-made digitaal scoreblad</div>
+  </div>
 
   <div class="toast" id="toast"></div>
 
   <script>
-    (() => {
-      const STORAGE_KEY = "qwixx-longo-digital-score-v1";
-      const colors = [
-        { id:"red",    name:"Rood",  hex:"#dc2626", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { id:"yellow", name:"Geel",  hex:"#ca8a04", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
-        { id:"green",  name:"Groen", hex:"#16a34a", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] },
-        { id:"blue",   name:"Blauw", hex:"#2563eb", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] }
-      ];
+  (() => {
+    // ── Constanten ──────────────────────────────────────────────────────────
+    const SCOREBLAD_KEY = "qwixx-longo-digital-score-v1";
+    const MULTI_KEY     = "qwixx-longo-multi-v2";
+    const COLORS = [
+      { id:"red",    name:"Rood",  hex:"#dc2626", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+      { id:"yellow", name:"Geel",  hex:"#ca8a04", nums:[2,3,4,5,6,7,8,9,10,11,12,13,14,15,16] },
+      { id:"green",  name:"Groen", hex:"#16a34a", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] },
+      { id:"blue",   name:"Blauw", hex:"#2563eb", nums:[16,15,14,13,12,11,10,9,8,7,6,5,4,3,2] }
+    ];
+    const PLAYER_COLORS = ["#dc2626","#2563eb","#16a34a","#ca8a04"];
 
-      const freshState = () => ({
-        playerName:"",
-        lucky:[5,8],
-        rows:Object.fromEntries(colors.map(c => [c.id, {
-          cells:Array(15).fill("open"),
-          lock:"open"
-        }])),
-        penalties:[false,false,false,false]
-      });
+    // ── Mode ─────────────────────────────────────────────────────────────────
+    let currentMode = null; // 'scoreblad' | 'multi'
+    let multiGame   = null; // { players:[{name,state}], activeIdx }
 
-      let state = freshState();
-      let history = [];
-      let toastTimer = null;
+    // `state` wijst altijd naar het actieve scoreblad
+    let state;
+    let history = [];
+    let toastTimer;
 
-      const clone = x => JSON.parse(JSON.stringify(x));
-      const scoreFor = n => n * (n + 1) / 2;
+    // ── State helpers ────────────────────────────────────────────────────────
+    const clone  = x => JSON.parse(JSON.stringify(x));
+    const scoreFor = n => n * (n + 1) / 2;
 
-      function load(){
-        try{
-          const raw = localStorage.getItem(STORAGE_KEY);
-          if(raw){
-            const parsed = JSON.parse(raw);
-            if(parsed && parsed.rows && parsed.penalties) state = parsed;
-          }
-        }catch(e){}
-      }
+    const freshState = (name = "") => ({
+      playerName: name,
+      lucky: [5, 8],
+      rows: Object.fromEntries(COLORS.map(c => [c.id, { cells: Array(15).fill("open"), lock: "open" }])),
+      penalties: [false, false, false, false]
+    });
 
-      function save(){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      }
+    function crossedCount(row) { return row.cells.filter(v => v === "cross").length; }
+    function rowScore(row)     { return scoreFor(crossedCount(row) + (row.lock === "own" ? 1 : 0)); }
+    function totalScore()      { return COLORS.reduce((s,c) => s + rowScore(state.rows[c.id]), 0) - state.penalties.filter(Boolean).length * 5; }
+    function closedRows()      { return COLORS.filter(c => state.rows[c.id].lock !== "open").length; }
+    function gameEnded()       { return state.penalties.filter(Boolean).length >= 4 || closedRows() >= 2; }
+    function checkpoint()      { history.push(clone(state)); if (history.length > 80) history.shift(); }
+    function latestProgress(row){ let i=-1; row.cells.forEach((v,j)=>{ if(v==="cross"||v==="skip") i=j; }); return i; }
 
-      function checkpoint(){
-        history.push(clone(state));
-        if(history.length > 80) history.shift();
-      }
+    // ── Opslaan / laden ──────────────────────────────────────────────────────
+    function saveScoreblad() { localStorage.setItem(SCOREBLAD_KEY, JSON.stringify(state)); }
+    function saveMulti()     { localStorage.setItem(MULTI_KEY, JSON.stringify(multiGame)); }
 
-      function showToast(msg, duration){
-        const el = document.getElementById("toast");
-        el.textContent = msg;
-        el.classList.add("show");
-        clearTimeout(toastTimer);
-        toastTimer = setTimeout(() => el.classList.remove("show"), duration || 2400);
-      }
+    function hasSavedScoreblad() {
+      try { const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY)); return r && r.rows && r.penalties; } catch(e){ return false; }
+    }
+    function hasSavedMulti() {
+      try { const r = JSON.parse(localStorage.getItem(MULTI_KEY)); return r && r.players && r.players.length; } catch(e){ return false; }
+    }
+    function loadScoreblad() {
+      try { const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY)); if(r && r.rows) state = r; } catch(e){}
+    }
+    function loadMulti() {
+      try { const r = JSON.parse(localStorage.getItem(MULTI_KEY)); if(r && r.players) multiGame = r; } catch(e){}
+    }
 
-      function crossedCount(row){
-        return row.cells.filter(v => v === "cross").length;
-      }
+    // ── Navigatie ────────────────────────────────────────────────────────────
+    function navigate(id) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById("screen-"+id).classList.add("active");
+    }
 
-      function rowScore(row){
-        const marks = crossedCount(row) + (row.lock === "own" ? 1 : 0);
-        return scoreFor(marks);
-      }
+    // ── Toast ────────────────────────────────────────────────────────────────
+    function showToast(msg, dur) {
+      const el = document.getElementById("toast");
+      el.textContent = msg; el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove("show"), dur || 2400);
+    }
 
-      function totalScore(){
-        const subtotal = colors.reduce((s,c) => s + rowScore(state.rows[c.id]), 0);
-        const penalties = state.penalties.filter(Boolean).length * 5;
-        return subtotal - penalties;
-      }
-
-      function closedRows(){
-        return colors.filter(c => state.rows[c.id].lock !== "open").length;
-      }
-
-      function gameEnded(){
-        return state.penalties.filter(Boolean).length >= 4 || closedRows() >= 2;
-      }
-
-      function latestProgressIndex(row){
-        let idx = -1;
-        row.cells.forEach((v,i) => {
-          if(v === "cross" || v === "skip") idx = i;
-        });
-        return idx;
-      }
-
-      function markNumber(colorId, index){
-        const row = state.rows[colorId];
-        if(row.lock !== "open"){ showToast("Deze rij is al gesloten."); return; }
-        const current = row.cells[index];
-        if(current !== "open"){
-          showToast(current === "cross" ? "Dit getal is al aangekruist." : "Dit vak is al voorbij.");
-          return;
-        }
-        const progress = latestProgressIndex(row);
-        if(index <= progress){ showToast("Je kunt in een rij alleen naar rechts verdergaan."); return; }
-        const isLockingNumber = index >= 13;
-        if(isLockingNumber && crossedCount(row) < 6){
-          showToast("Voor één van de laatste twee getallen heb je eerst 6 kruisjes in deze rij nodig.");
-          return;
-        }
-        checkpoint();
-        for(let i=0;i<index;i++){
-          if(row.cells[i] === "open") row.cells[i] = "skip";
-        }
-        row.cells[index] = "cross";
-        if(isLockingNumber){
-          row.lock = "own";
-          for(let i=index+1;i<row.cells.length;i++){
-            if(row.cells[i] === "open") row.cells[i] = "skip";
-          }
-          showToast("Rij gesloten! Het slot telt mee als extra kruis.");
-        }
-        save();
-        render();
-      }
-
-      function toggleExternalLock(colorId){
-        const row = state.rows[colorId];
-        checkpoint();
-        if(row.lock === "external"){
-          row.lock = "open";
-        } else if(row.lock === "own"){
-          showToast("Deze rij is door jou gesloten. Gebruik Ongedaan als dat per ongeluk was.");
-          history.pop();
-          return;
-        } else {
-          row.lock = "external";
-        }
-        save();
-        render();
-      }
-
-      function renderRows(){
-        const root = document.getElementById("rows");
-        root.innerHTML = "";
-        colors.forEach(color => {
-          const row = state.rows[color.id];
-          const card = document.createElement("section");
-          card.className = "row-card";
-          card.style.setProperty("--row-color", color.hex);
-
-          const head = document.createElement("div");
-          head.className = "row-head";
-
-          const title = document.createElement("div");
-          title.className = "row-title";
-          title.innerHTML = `<span class="dot" style="background:${color.hex}"></span>${color.name}`;
-
-          const meta = document.createElement("div");
-          meta.className = "row-meta";
-          const marks = crossedCount(row) + (row.lock === "own" ? 1 : 0);
-          meta.innerHTML = `<span>${marks} kruis${marks===1?"":"jes"}</span><span class="row-score">${rowScore(row)} pt</span>`;
-
-          const ext = document.createElement("button");
-          ext.className = "external-lock" + (row.lock === "external" ? " active" : "");
-          ext.textContent = row.lock === "external" ? "🔒 Extern gesloten" : "🔒 Extern sluiten";
-          ext.addEventListener("click", () => toggleExternalLock(color.id));
-          meta.appendChild(ext);
-          head.append(title, meta);
-
-          const grid = document.createElement("div");
-          grid.className = "number-grid";
-          color.nums.forEach((num, i) => {
-            const b = document.createElement("button");
-            b.className = "num";
-            b.setAttribute("aria-label", `${color.name} ${num}`);
-            b.innerHTML = `<span>${num}</span>`;
-            if(row.cells[i] === "cross") b.classList.add("crossed");
-            if(row.cells[i] === "skip") b.classList.add("skipped");
-            if(row.lock !== "open" && row.cells[i] === "open") b.classList.add("locked-out");
-            b.addEventListener("click", () => markNumber(color.id, i));
-            grid.appendChild(b);
-          });
-
-          const lock = document.createElement("div");
-          lock.className = "num lock";
-          lock.setAttribute("aria-label", "Slot");
-          lock.textContent = "🔒";
-          if(row.lock === "own") lock.classList.add("own");
-          if(row.lock === "external") lock.classList.add("external");
-          grid.appendChild(lock);
-
-          card.append(head, grid);
-          root.appendChild(card);
-        });
-      }
-
-      function renderPenalties(){
-        const root = document.getElementById("penalties");
-        root.innerHTML = "";
-        state.penalties.forEach((on, i) => {
-          const b = document.createElement("button");
-          b.className = "penalty" + (on ? " on" : "");
-          b.innerHTML = `<span>${i+1}</span>`;
-          b.setAttribute("aria-label", `Mislukte worp ${i+1}`);
-          b.addEventListener("click", () => {
-            checkpoint();
-            state.penalties[i] = !state.penalties[i];
-            save();
-            render();
-          });
-          root.appendChild(b);
-        });
-      }
-
-      function renderSummary(){
-        document.getElementById("playerName").value = state.playerName || "";
-        document.getElementById("lucky1").value = state.lucky?.[0] ?? 5;
-        document.getElementById("lucky2").value = state.lucky?.[1] ?? 8;
-        document.getElementById("totalScore").textContent = totalScore();
-
-        const status = document.getElementById("gameStatus");
-        if(gameEnded()){
-          status.className = "game-status ended";
-          const why = state.penalties.filter(Boolean).length >= 4 ? "4 mislukte worpen" : "2 gesloten kleuren";
-          status.textContent = `Spel afgelopen · ${why}.`;
-        } else {
-          status.className = "game-status";
-          const p = state.penalties.filter(Boolean).length;
-          const l = closedRows();
-          status.textContent = `${p}/4 straf · ${l}/2 kleuren dicht`;
-        }
-        document.getElementById("undoBtn").disabled = history.length === 0;
-      }
-
-      function render(){
-        renderRows();
-        renderPenalties();
-        renderSummary();
-      }
-
-      // ── Invoer ──
-      document.getElementById("playerName").addEventListener("input", e => {
-        state.playerName = e.target.value; save();
-      });
-      ["lucky1","lucky2"].forEach((id, idx) => {
-        document.getElementById(id).addEventListener("change", e => {
-          let v = Math.max(2, Math.min(16, Number(e.target.value) || (idx ? 8 : 5)));
-          state.lucky[idx] = v; e.target.value = v; save();
-        });
-      });
-
-      document.getElementById("undoBtn").addEventListener("click", () => {
-        if(!history.length) return;
-        state = history.pop(); save(); render();
-      });
-      document.getElementById("resetBtn").addEventListener("click", () => {
-        if(!confirm("Volledig scoreblad wissen en opnieuw beginnen?")) return;
-        checkpoint(); state = freshState(); save(); render();
-      });
-
-      // ── Volledig scherm (iOS-proof) ──
-      const fsBtn = document.getElementById("fullscreenBtn");
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-      const isStandalone = window.navigator.standalone === true
-        || window.matchMedia("(display-mode: standalone)").matches;
-
-      if(isIOS){
-        if(isStandalone){
-          // Al in standalone/fullscreen-modus via PWA
-          fsBtn.hidden = true;
-        } else {
-          // In Safari-browser: geef uitleg
-          fsBtn.textContent = "📱 Voeg toe aan beginscherm";
-          fsBtn.classList.add("btn-ios-fs");
-          fsBtn.addEventListener("click", () => {
-            showToast("Tik op het deel-icoon (□↑) onderaan Safari → 'Zet op beginscherm' voor volledig scherm.", 4500);
-          });
-        }
+    // ── Startscherm opzetten ─────────────────────────────────────────────────
+    function initHome() {
+      const notice = document.getElementById("savedNotice");
+      const label  = document.getElementById("savedLabel");
+      if (hasSavedMulti()) {
+        loadMulti();
+        const names = multiGame.players.map(p=>p.name||"?").join(", ");
+        label.textContent = `Multiplayer (${names})`;
+        notice.style.display = "flex";
+        document.getElementById("btnResume").onclick = () => resumeMulti();
+      } else if (hasSavedScoreblad()) {
+        const r = JSON.parse(localStorage.getItem(SCOREBLAD_KEY));
+        label.textContent = `Scoreblad${r.playerName ? " · " + r.playerName : ""}`;
+        notice.style.display = "flex";
+        document.getElementById("btnResume").onclick = () => startScoreblad(true);
       } else {
-        fsBtn.addEventListener("click", async () => {
-          try{
-            if(!document.fullscreenElement) await document.documentElement.requestFullscreen();
-            else await document.exitFullscreen();
-          }catch(e){
-            showToast("Volledig scherm wordt op dit toestel niet ondersteund.");
-          }
-        });
+        notice.style.display = "none";
       }
+    }
 
-      // ── PWA install (Android/Chrome) ──
-      let deferredInstallPrompt = null;
-      const installBtn = document.getElementById("installBtn");
-      window.addEventListener("beforeinstallprompt", (e) => {
-        e.preventDefault(); deferredInstallPrompt = e; installBtn.hidden = false;
-      });
-      installBtn.addEventListener("click", async () => {
-        if(!deferredInstallPrompt) return;
-        deferredInstallPrompt.prompt();
-        await deferredInstallPrompt.userChoice;
-        deferredInstallPrompt = null; installBtn.hidden = true;
-      });
-      window.addEventListener("appinstalled", () => { installBtn.hidden = true; });
-
-      // ── Service worker ──
-      if("serviceWorker" in navigator){
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("service-worker.js").then(reg => {
-            // Controleer meteen op updates
-            reg.update();
-          }).catch(() => {});
-        });
-      }
-
-      load();
+    // ── Scoreblad starten ─────────────────────────────────────────────────────
+    function startScoreblad(resume = false) {
+      currentMode = "scoreblad"; multiGame = null; history = [];
+      state = freshState();
+      if (resume) loadScoreblad();
+      document.getElementById("playerBar").style.display = "none";
+      document.getElementById("passBtn").style.display = "none";
+      document.getElementById("playerName").closest(".player-wrap").querySelector("div:first-child").style.display = "";
+      navigate("game");
       render();
-    })();
+    }
+
+    // ── Multiplayer setup ─────────────────────────────────────────────────────
+    let setupCount = 2;
+    function initMultiSetup() {
+      // Count buttons
+      const countRow = document.getElementById("countBtns");
+      countRow.innerHTML = "";
+      [2,3,4].forEach(n => {
+        const b = document.createElement("button");
+        b.className = "count-btn" + (n === setupCount ? " active" : "");
+        b.textContent = n + " spelers";
+        b.onclick = () => { setupCount = n; initMultiSetup(); };
+        countRow.appendChild(b);
+      });
+      // Player inputs
+      const inp = document.getElementById("playerInputs");
+      const existing = Array.from(inp.querySelectorAll("input")).map(i => i.value);
+      inp.innerHTML = "";
+      for (let i = 0; i < setupCount; i++) {
+        const row = document.createElement("div");
+        row.className = "player-input-row";
+        const num = document.createElement("div");
+        num.className = `player-num p-color-${i}`;
+        num.textContent = i+1;
+        const input = document.createElement("input");
+        input.className = "name-input";
+        input.type = "text";
+        input.placeholder = `Speler ${i+1}`;
+        input.maxLength = 30;
+        input.value = existing[i] || "";
+        row.append(num, input);
+        inp.appendChild(row);
+      }
+    }
+
+    function startMulti(resume = false) {
+      currentMode = "multi"; history = [];
+      if (resume) {
+        // multiGame already loaded
+      } else {
+        const inputs = document.querySelectorAll("#playerInputs input");
+        const names = Array.from(inputs).map((inp,i) => inp.value.trim() || `Speler ${i+1}`);
+        multiGame = {
+          players: names.map(name => ({ name, state: freshState(name) })),
+          activeIdx: 0
+        };
+        saveMulti();
+        localStorage.removeItem(SCOREBLAD_KEY);
+      }
+      activatePlayer(multiGame.activeIdx, false);
+    }
+
+    function resumeMulti() {
+      currentMode = "multi"; history = [];
+      activatePlayer(multiGame.activeIdx, false);
+    }
+
+    function activatePlayer(idx, showHandoff) {
+      multiGame.activeIdx = idx;
+      state = multiGame.players[idx].state;
+      if (showHandoff) {
+        const p = multiGame.players[idx];
+        document.getElementById("handoffAvatar").style.background = PLAYER_COLORS[idx];
+        document.getElementById("handoffAvatar").textContent = p.name.charAt(0).toUpperCase() || "?";
+        document.getElementById("handoffTitle").textContent = `${p.name} is aan zet`;
+        navigate("handoff");
+      } else {
+        enterGame();
+      }
+    }
+
+    function enterGame() {
+      // Show/hide multi-specific UI
+      const isMulti = currentMode === "multi";
+      document.getElementById("playerBar").style.display = isMulti ? "flex" : "none";
+      document.getElementById("passBtn").style.display  = isMulti ? "" : "none";
+      // In multi: hide name field (name is fixed)
+      document.querySelector(".player-wrap>div:first-child").style.display = isMulti ? "none" : "";
+      navigate("game");
+      render();
+    }
+
+    function passToNext() {
+      if (currentMode !== "multi") return;
+      saveMulti();
+      const next = (multiGame.activeIdx + 1) % multiGame.players.length;
+      activatePlayer(next, true);
+    }
+
+    // ── Spel: nummers aanvinken ───────────────────────────────────────────────
+    function markNumber(colorId, index) {
+      const row = state.rows[colorId];
+      if (row.lock !== "open") { showToast("Deze rij is al gesloten."); return; }
+      const cur = row.cells[index];
+      if (cur !== "open") { showToast(cur === "cross" ? "Al aangekruist." : "Al voorbij."); return; }
+      if (index <= latestProgress(row)) { showToast("Je kunt alleen naar rechts."); return; }
+      if (index >= 13 && crossedCount(row) < 6) { showToast("Je hebt eerst 6 kruisjes nodig voor de laatste twee."); return; }
+      checkpoint();
+      for (let i=0;i<index;i++) if(row.cells[i]==="open") row.cells[i]="skip";
+      row.cells[index] = "cross";
+      if (index >= 13) {
+        row.lock = "own";
+        for (let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
+        showToast("Rij gesloten! Het slot telt mee als extra kruis.");
+      }
+      currentMode === "multi" ? saveMulti() : saveScoreblad();
+      render();
+    }
+
+    function toggleExternalLock(colorId) {
+      const row = state.rows[colorId];
+      checkpoint();
+      if (row.lock === "external") { row.lock = "open"; }
+      else if (row.lock === "own") { showToast("Jij sloot deze rij. Gebruik Ongedaan."); history.pop(); return; }
+      else { row.lock = "external"; }
+      currentMode === "multi" ? saveMulti() : saveScoreblad();
+      render();
+    }
+
+    // ── Renderen ─────────────────────────────────────────────────────────────
+    function renderRows() {
+      const root = document.getElementById("rows");
+      root.innerHTML = "";
+      COLORS.forEach(color => {
+        const row = state.rows[color.id];
+        const card = document.createElement("section");
+        card.className = "row-card";
+        card.style.setProperty("--row-color", color.hex);
+        const head = document.createElement("div"); head.className = "row-head";
+        const title = document.createElement("div"); title.className = "row-title";
+        title.innerHTML = `<span class="dot" style="background:${color.hex}"></span>${color.name}`;
+        const meta = document.createElement("div"); meta.className = "row-meta";
+        const marks = crossedCount(row) + (row.lock === "own" ? 1 : 0);
+        meta.innerHTML = `<span>${marks} kruis${marks===1?"":"jes"}</span><span class="row-score">${rowScore(row)} pt</span>`;
+        const ext = document.createElement("button");
+        ext.className = "external-lock" + (row.lock === "external" ? " active" : "");
+        ext.textContent = row.lock === "external" ? "🔒 Extern gesloten" : "🔒 Extern sluiten";
+        ext.onclick = () => toggleExternalLock(color.id);
+        meta.appendChild(ext); head.append(title, meta);
+        const grid = document.createElement("div"); grid.className = "number-grid";
+        color.nums.forEach((num, i) => {
+          const b = document.createElement("button");
+          b.className = "num"; b.innerHTML = `<span>${num}</span>`;
+          b.setAttribute("aria-label", `${color.name} ${num}`);
+          if (row.cells[i]==="cross")  b.classList.add("crossed");
+          if (row.cells[i]==="skip")   b.classList.add("skipped");
+          if (row.lock!=="open" && row.cells[i]==="open") b.classList.add("locked-out");
+          b.onclick = () => markNumber(color.id, i);
+          grid.appendChild(b);
+        });
+        const lock = document.createElement("div");
+        lock.className = "num lock"; lock.textContent = "🔒";
+        if (row.lock==="own")      lock.classList.add("own");
+        if (row.lock==="external") lock.classList.add("external");
+        grid.appendChild(lock);
+        card.append(head, grid);
+        root.appendChild(card);
+      });
+    }
+
+    function renderPenalties() {
+      const root = document.getElementById("penalties"); root.innerHTML = "";
+      state.penalties.forEach((on, i) => {
+        const b = document.createElement("button");
+        b.className = "penalty" + (on ? " on" : "");
+        b.innerHTML = `<span>${i+1}</span>`;
+        b.setAttribute("aria-label", `Mislukte worp ${i+1}`);
+        b.onclick = () => { checkpoint(); state.penalties[i]=!state.penalties[i]; currentMode==="multi"?saveMulti():saveScoreblad(); render(); };
+        root.appendChild(b);
+      });
+    }
+
+    function renderSummary() {
+      document.getElementById("playerName").value = state.playerName || "";
+      document.getElementById("lucky1").value = state.lucky?.[0] ?? 5;
+      document.getElementById("lucky2").value = state.lucky?.[1] ?? 8;
+      document.getElementById("totalScore").textContent = totalScore();
+      const status = document.getElementById("gameStatus");
+      if (gameEnded()) {
+        status.className = "game-status ended";
+        status.textContent = `Spel afgelopen · ${state.penalties.filter(Boolean).length>=4?"4 mislukte worpen":"2 gesloten kleuren"}.`;
+      } else {
+        status.className = "game-status";
+        status.textContent = `${state.penalties.filter(Boolean).length}/4 straf · ${closedRows()}/2 kleuren dicht`;
+      }
+      document.getElementById("undoBtn").disabled = history.length === 0;
+    }
+
+    function renderPlayerBar() {
+      if (currentMode !== "multi") return;
+      const p = multiGame.players[multiGame.activeIdx];
+      document.getElementById("playerBarDot").style.background = PLAYER_COLORS[multiGame.activeIdx];
+      document.getElementById("playerBarName").textContent = p.name;
+      document.getElementById("playerBarSub").textContent =
+        `Speler ${multiGame.activeIdx+1} van ${multiGame.players.length}`;
+      // Mini-scores van alle spelers
+      const scoresEl = document.getElementById("playerBarScores");
+      scoresEl.innerHTML = multiGame.players.map((pl, i) => {
+        const s = COLORS.reduce((acc,c) => acc + rowScore(pl.state.rows[c.id]), 0)
+                  - pl.state.penalties.filter(Boolean).length * 5;
+        const active = i === multiGame.activeIdx;
+        return `<span style="${active?"color:var(--ink);font-weight:900":""}">${pl.name.split(" ")[0]}: <span>${s}</span>pt</span>`;
+      }).join("");
+    }
+
+    function render() {
+      renderRows();
+      renderPenalties();
+      renderSummary();
+      renderPlayerBar();
+    }
+
+    // ── Invoer ────────────────────────────────────────────────────────────────
+    document.getElementById("playerName").addEventListener("input", e => {
+      state.playerName = e.target.value;
+      currentMode === "multi" ? saveMulti() : saveScoreblad();
+    });
+    ["lucky1","lucky2"].forEach((id, idx) => {
+      document.getElementById(id).addEventListener("change", e => {
+        let v = Math.max(2, Math.min(16, Number(e.target.value)||(idx?8:5)));
+        state.lucky[idx] = v; e.target.value = v;
+        currentMode === "multi" ? saveMulti() : saveScoreblad();
+      });
+    });
+
+    // ── Knop-handlers ────────────────────────────────────────────────────────
+    document.getElementById("undoBtn").onclick = () => {
+      if (!history.length) return;
+      state = history.pop();
+      if (currentMode === "multi") { multiGame.players[multiGame.activeIdx].state = state; saveMulti(); }
+      else saveScoreblad();
+      render();
+    };
+    document.getElementById("passBtn").onclick = passToNext;
+    document.getElementById("resetBtn").onclick = () => {
+      if (!confirm("Dit scoreblad wissen en opnieuw beginnen?")) return;
+      checkpoint(); state = freshState(state.playerName);
+      if (currentMode === "multi") { multiGame.players[multiGame.activeIdx].state = state; saveMulti(); }
+      else saveScoreblad();
+      render();
+    };
+    document.getElementById("btnToHome").onclick = () => {
+      if (currentMode === "multi") saveMulti();
+      else saveScoreblad();
+      navigate("home"); initHome();
+    };
+
+    // ── Volledig scherm (iOS-proof) ──────────────────────────────────────────
+    const fsBtn = document.getElementById("fullscreenBtn");
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia("(display-mode:standalone)").matches;
+    if (isIOS) {
+      if (isStandalone) { fsBtn.hidden = true; }
+      else { fsBtn.textContent = "📱 Voeg toe aan beginscherm"; fsBtn.classList.add("btn-ios-fs"); fsBtn.onclick = () => showToast("Tik op het deel-icoon (□↑) in Safari → 'Zet op beginscherm'.", 4500); }
+    } else {
+      fsBtn.onclick = async () => {
+        try { document.fullscreenElement ? await document.exitFullscreen() : await document.documentElement.requestFullscreen(); }
+        catch(e) { showToast("Volledig scherm niet ondersteund."); }
+      };
+    }
+
+    // ── Home knoppen ─────────────────────────────────────────────────────────
+    document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
+    document.getElementById("btnMulti").onclick = () => { initMultiSetup(); navigate("multi-setup"); };
+    document.getElementById("btnSetupBack").onclick  = () => navigate("home");
+    document.getElementById("btnStartMulti").onclick = () => startMulti(false);
+    document.getElementById("btnHandoffReady").onclick = () => enterGame();
+
+    // ── PWA: install & SW ────────────────────────────────────────────────────
+    let deferredPrompt = null;
+    const installBtn = document.getElementById("installBtn");
+    window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferredPrompt = e; installBtn.hidden = false; });
+    installBtn.onclick = async () => { if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; installBtn.hidden=true; };
+    window.addEventListener("appinstalled", () => { installBtn.hidden = true; });
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => { navigator.serviceWorker.register("service-worker.js").then(r=>r.update()).catch(()=>{}); });
+    }
+
+    // ── Opstarten ────────────────────────────────────────────────────────────
+    initHome();
+  })();
   </script>
 </body>
 </html>
