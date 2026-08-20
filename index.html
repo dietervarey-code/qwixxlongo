@@ -118,6 +118,7 @@
     .num.lock.external{background:#6b7280;color:#fff;border-color:#6b7280;border-style:solid}
     .num.valid-pick{box-shadow:0 0 0 3px var(--row-color);z-index:1;position:relative}
     .num.not-valid{opacity:.18;pointer-events:none}
+    .num.last-two{border-width:3px;border-style:double}
 
     /* Onderste balk */
     .bottom-bar{display:grid;grid-template-columns:auto 1fr auto auto;gap:12px;align-items:start;background:var(--card);border:1px solid #e5e7eb;border-radius:var(--radius);padding:14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
@@ -697,11 +698,11 @@ async function startGame() {
   try {
     const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
     const firstId = players[0][0];
-    // Wijs geluksgetallen willekeurig toe aan elke speler (2 per speler, 2–12)
+    // Wijs geluksgetallen willekeurig toe aan elke speler (2 per speler, 2–16)
     const luckyNumbers = {};
     players.forEach(([pid]) => {
-      const n1 = Math.floor(Math.random()*11)+2;
-      let n2; do { n2 = Math.floor(Math.random()*11)+2; } while (n2===n1);
+      const n1 = Math.floor(Math.random()*15)+2;
+      let n2; do { n2 = Math.floor(Math.random()*15)+2; } while (n2===n1);
       luckyNumbers[pid] = [n1, n2];
     });
     await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1, dicePhase:"rolling", luckyNumbers });
@@ -752,7 +753,7 @@ async function rollDice() {
   if (roomData?.dicePhase !== "rolling") { showToast("Dobbelstenen zijn al gegooid."); return; }
   const btn = document.getElementById("btnRoll");
   btn.disabled = true;
-  const roll = () => Math.floor(Math.random()*6)+1;
+  const roll = () => Math.floor(Math.random()*8)+1;
   const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
   document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
 
@@ -873,13 +874,14 @@ function renderDice() {
           luckyBtn.onclick = () => { awaitingLuckyPick = true; render(); };
           combos.appendChild(luckyBtn);
         } else {
-          // Rij-kiezer
+          // Rij-kiezer — alleen rijen met het laagste aantal kruisjes
           const pickLabel = document.createElement("span");
           pickLabel.className = "combo for-all";
           pickLabel.innerHTML = "⭐ Kies een kleurenrij voor je bonuskruis:";
           combos.appendChild(pickLabel);
-          COLORS.forEach(c => {
-            if (state.rows[c.id].lock !== "open") return;
+          const openRowsL = COLORS.filter(c => state.rows[c.id].lock === "open");
+          const minLuckyX = openRowsL.reduce((m,c) => Math.min(m, crossedCount(state.rows[c.id])), Infinity);
+          openRowsL.filter(c => crossedCount(state.rows[c.id]) === minLuckyX).forEach(c => {
             const rb = document.createElement("button");
             rb.className = "btn";
             rb.style.cssText = `font-size:.82rem;padding:3px 12px;margin:2px;background:${c.hex};color:#fff;border:none`;
@@ -916,7 +918,7 @@ function renderDice() {
         COLORS.forEach(c => {
           const v1 = dice.w1 + dice[c.id], v2 = dice.w2 + dice[c.id];
           const vals = v1===v2 ? [v1] : [v1,v2];
-          vals.forEach(v => { if(v>=2&&v<=18) addCombo(combos, `⚪+${c.name}: ${v}`, "for-all"); });
+          vals.forEach(v => { if(v>=2&&v<=16) addCombo(combos, `⚪+${c.name}: ${v}`, "for-all"); });
         });
         // Sla kleur over = beurt doorgeven zonder kleurcombo
         const skipColorBtn = document.createElement("button");
@@ -1053,7 +1055,7 @@ function getValidNumbers(colorId) {
   if (phase === "whites") {
     // Iedereen: alleen ⚪+⚪
     const ww = d.w1 + d.w2;
-    return new Set(ww >= 2 && ww <= 18 ? [ww] : []);
+    return new Set(ww >= 2 && ww <= 16 ? [ww] : []);
   }
 
   if (phase === "colors") {
@@ -1061,7 +1063,7 @@ function getValidNumbers(colorId) {
     // Actieve speler: ⚪+kleur en ⚪+⚪+kleur (GEEN ⚪+⚪, dat was de witfase)
     const valid = new Set();
     [d.w1 + d[colorId], d.w2 + d[colorId]]
-      .forEach(v => { if (v >= 2 && v <= 18) valid.add(v); });
+      .forEach(v => { if (v >= 2 && v <= 16) valid.add(v); });
     return valid;
   }
 
@@ -1166,6 +1168,19 @@ async function applyLuckyBonusToRow(colorId) {
   for (let i = 0; i < bestIndex; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
   row.cells[bestIndex] = "cross";
 
+  // Sluit rij als speler een van de laatste twee vakjes aanvinkt
+  if (bestIndex >= 13) {
+    row.lock = "own";
+    for (let i = bestIndex + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+    if (currentMode === "multi") {
+      set(ref(db, `rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy: playerId }).catch(console.error);
+    } else if (currentMode === "solo") {
+      soloRoom.globalLocks = soloRoom.globalLocks || {};
+      soloRoom.globalLocks[colorId] = { lockedBy: playerId };
+    }
+    showToast(`🔒 Rij ${COLORS.find(c => c.id === colorId).name} gesloten! Slot = extra punt.`);
+  }
+
   markedThisTurn.push(colorId);
   madeWhiteDecision = true;
   if (currentMode === "multi") {
@@ -1178,7 +1193,7 @@ async function applyLuckyBonusToRow(colorId) {
   }
   saveState();
   render();
-  showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === colorId).name}!`);
+  if (bestIndex < 13) showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === colorId).name}!`);
   if (currentMode === "solo") soloCheckAndAdvanceWhites();
 }
 
@@ -1222,7 +1237,7 @@ function markNumber(colorId, index) {
         showToast("Je hebt al een kleurscore gebruikt deze beurt."); return;
       }
       const validVals = new Set(
-        [d.w1+d[colorId], d.w2+d[colorId]].filter(v=>v>=2&&v<=18)
+        [d.w1+d[colorId], d.w2+d[colorId]].filter(v=>v>=2&&v<=16)
       );
       if (!validVals.has(num)) {
         const list = [...validVals].sort((a,b)=>a-b).join(", ");
@@ -1339,6 +1354,7 @@ function renderRows() {
     color.nums.forEach((num,i)=>{
       const b = document.createElement("button");
       b.className = "num"; b.innerHTML = `<span>${num}</span>`;
+      if (i >= 13) b.classList.add("last-two"); // laatste twee vereisen 6 kruisjes
       if (row.cells[i]==="cross")  b.classList.add("crossed");
       if (row.cells[i]==="skip")   b.classList.add("skipped");
       if (row.lock!=="open"&&row.cells[i]==="open") b.classList.add("locked-out");
@@ -1430,11 +1446,11 @@ function setupSoloGame(numBots) {
     players[botId] = { name: botName, order: i, state: freshState(botName), isBot: true };
   }
 
-  // Willekeurige geluksgetallen per speler
+  // Willekeurige geluksgetallen per speler (2–16, bereik van twee d8)
   const luckyNumbers = {};
   Object.keys(players).forEach(pid => {
-    const n1 = Math.floor(Math.random()*11)+2;
-    let n2; do { n2 = Math.floor(Math.random()*11)+2; } while (n2===n1);
+    const n1 = Math.floor(Math.random()*15)+2;
+    let n2; do { n2 = Math.floor(Math.random()*15)+2; } while (n2===n1);
     luckyNumbers[pid] = [n1, n2];
   });
 
@@ -1555,7 +1571,7 @@ function botDecideColors(botId) {
   const options  = [];
   COLORS.forEach(c => {
     [d.w1 + d[c.id], d.w2 + d[c.id]].forEach(v => {
-      if (v < 2 || v > 18) return;
+      if (v < 2 || v > 16) return;
       const numIdx = c.nums.indexOf(v);
       if (numIdx < 0) return;
       const row = botState.rows[c.id];
@@ -1659,7 +1675,7 @@ function scheduleBotActiveTurn(botId) {
   setTimeout(() => {
     if (currentMode !== "solo" || soloRoom.status !== "playing") return;
     if (soloRoom.activePlayerId !== botId) return;
-    const roll = () => Math.floor(Math.random()*6)+1;
+    const roll = () => Math.floor(Math.random()*8)+1;
     soloRoom.dice      = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
     soloRoom.dicePhase = "whites";
     soloRoom.whitesDone = {};
