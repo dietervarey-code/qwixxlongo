@@ -159,10 +159,51 @@
       .app{padding:7px}
       .bottom-bar{grid-template-columns:1fr;gap:10px}
       .legend{grid-template-columns:1fr}
-      .number-grid{grid-template-columns:repeat(16,42px)}
+      .number-grid{grid-template-columns:repeat(16,40px)}
       .action-wrap{flex-direction:row}
       .action-wrap .btn{flex:1}
     }
+
+    /* ── Landscape op telefoon: alle 4 kleuren in één scherm ── */
+    @media (orientation:landscape) and (max-height:520px){
+      .app{padding:4px 6px}
+      /* Rijen compact */
+      .rows{gap:4px;margin-bottom:4px}
+      .row-card{padding:4px 8px;border-radius:10px}
+      .row-head{margin-bottom:3px}
+      .row-title{font-size:.8rem;gap:6px}
+      .dot{width:10px;height:10px}
+      .row-meta{font-size:.72rem;gap:6px}
+      .external-lock{padding:2px 7px;font-size:.66rem}
+      /* Getallen kleiner */
+      .number-grid{gap:3px;grid-template-columns:repeat(16,minmax(28px,1fr))}
+      .num{min-width:28px;font-size:.78rem;border-radius:7px;border-width:1.5px}
+      .num.crossed::after{font-size:1.2rem}
+      .num.lock{font-size:.85rem}
+      /* Onderste balk: compacte enkele rij */
+      .bottom-bar{
+        grid-template-columns:auto auto 1fr;
+        grid-template-rows:auto;
+        padding:5px 10px;gap:10px;
+        margin-bottom:4px;border-radius:10px;
+        align-items:center
+      }
+      /* Verberg speler/geluk velden — niet nodig tijdens spel */
+      .player-wrap{display:none}
+      .score-wrap{align-self:center}
+      .score-total strong{font-size:1.4rem}
+      .game-status{font-size:.7rem}
+      .action-wrap{flex-direction:row;align-self:center;gap:5px}
+      .action-wrap .btn{padding:5px 8px;font-size:.76rem}
+      .field-label{font-size:.62rem;margin-bottom:3px}
+      /* Penalties kleiner */
+      .penalties{gap:5px}
+      .penalty{width:30px;height:30px;border-radius:7px}
+      .penalty.on::after{font-size:1.2rem}
+      /* Legenda + footer verbergen */
+      .legend,.footer{display:none}
+    }
+
     @media print{
       .action-wrap,.external-lock,.footer,.legend{display:none!important}
       .app{width:100%;padding:0}
