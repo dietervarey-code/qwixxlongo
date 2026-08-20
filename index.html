@@ -577,39 +577,45 @@ function setupDisconnect() {
 function listenToRoom() {
   if (roomUnsubscribe) roomUnsubscribe();
   roomUnsubscribe = onValue(ref(db, `rooms/${roomCode}`), snap => {
-    roomData = snap.val();
-    if (!roomData) { navigate("home"); localStorage.removeItem(ROOM_KEY); showToast("Kamer is verwijderd."); return; }
+    try {
+      roomData = snap.val();
+      if (!roomData) { navigate("home"); localStorage.removeItem(ROOM_KEY); showToast("Kamer is verwijderd."); return; }
 
-    // Verwerk globale sloten
-    if (roomData.globalLocks) {
-      COLORS.forEach(c => {
-        const lock = roomData.globalLocks[c.id];
-        if (lock && lock.lockedBy && lock.lockedBy !== playerId) {
-          if (state.rows[c.id].lock === "open") {
-            state.rows[c.id].lock = "external";
+      // Verwerk globale sloten
+      if (roomData.globalLocks) {
+        COLORS.forEach(c => {
+          const lock = roomData.globalLocks[c.id];
+          if (lock && lock.lockedBy && lock.lockedBy !== playerId) {
+            if (state && state.rows[c.id] && state.rows[c.id].lock === "open") {
+              state.rows[c.id].lock = "external";
+            }
           }
+        });
+      }
+
+      const curScreen = document.querySelector(".screen.active")?.id;
+
+      // Naar game als spel gestart is (voor alle spelers)
+      if (roomData.status === "playing" && curScreen === "screen-waiting") {
+        setupGameScreen(true);
+        navigate("game");
+        render();
+        return;
+      }
+
+      if (curScreen === "screen-waiting") { renderWaiting(); return; }
+
+      if (curScreen === "screen-game") {
+        // Veiligheidsnet: zorg dat multi-modus actief is en diceArea zichtbaar
+        if (currentMode !== "multi") {
+          setupGameScreen(true);
         }
-      });
-    }
-
-    // Update eigen state van Firebase (als andere client het heeft geüpdatet)
-    const myFb = roomData.players?.[playerId]?.state;
-    // Alleen overnemen als onze lokale state nog standaard is (freshState), om conflicten te vermijden
-    // We pushen altijd onszelf naar Firebase, dus lokale state is leidend.
-
-    const curScreen = document.querySelector(".screen.active")?.id;
-    if (curScreen === "screen-waiting") renderWaiting();
-    if (curScreen === "screen-game") { render(); renderDice(); renderTurnBar(); }
-
-    // Naar game als host het spel start
-    if (roomData.status === "playing" && curScreen === "screen-waiting") {
-      setupGameScreen(true);
-      navigate("game");
-      render();
-    }
-    // Naar eindscherm
-    if (roomData.status === "ended" && curScreen === "screen-game") {
-      renderEndGame();
+        render();
+        // Naar eindscherm
+        if (roomData.status === "ended") renderEndGame();
+      }
+    } catch(e) {
+      console.error("listenToRoom callback error:", e);
     }
   });
 }
@@ -723,6 +729,7 @@ function renderDice() {
 
   // Roll button
   const btn = document.getElementById("btnRoll");
+  btn.disabled = false; // reset na vorige beurt
   btn.style.display = isActive && !dice.rolled ? "" : "none";
 
   // Dobbelstenen
@@ -949,8 +956,10 @@ function renderSummary() {
   // Pass-knop alleen actief als jij aan zet bent
   if (currentMode==="multi") {
     const pb = document.getElementById("passBtn");
-    pb.disabled = !amIActive();
-    pb.textContent = amIActive() ? "Beurt doorgeven →" : "Wacht op actieve speler…";
+    const myTurn = amIActive();
+    pb.disabled = !myTurn;
+    pb.style.opacity = myTurn ? "1" : "0.5";
+    pb.textContent = myTurn ? "Beurt doorgeven →" : "Wacht op actieve speler…";
   }
 }
 
