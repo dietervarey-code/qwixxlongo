@@ -438,6 +438,7 @@ let toastTimer;
 let currentTurnNumber  = null;
 let markedThisTurn     = []; // colorIds die deze beurt aangekruist zijn
 let madeWhiteDecision  = false; // heeft deze speler al beslist over ⚪+⚪ deze beurt?
+let awaitingLuckyPick  = false; // wacht op rij-keuze voor geluksbonus
 
 localStorage.setItem(PLAYER_ID_KEY, playerId);
 
@@ -862,14 +863,37 @@ function renderDice() {
     if (madeWhiteDecision) {
       addCombo(combos, allDone ? "✓ Iedereen klaar — kleurfase start…" : `✓ Jij klaar (${donePids.length}/${allPids.length})`, "for-all");
     } else {
-      // Geluksbonus-knop (alleen als geluksgetal valt)
+      // Geluksbonus-knop (alleen als geluksgetal valt) — speler kiest zelf de rij
       if (lucky) {
-        const luckyBtn = document.createElement("button");
-        luckyBtn.className = "btn";
-        luckyBtn.style.cssText = "font-size:.82rem;padding:3px 12px;margin-left:4px;background:#f59e0b;color:#fff;border:none";
-        luckyBtn.textContent = "⭐ Gebruik geluksbonus (minste rij)";
-        luckyBtn.onclick = applyLuckyBonus;
-        combos.appendChild(luckyBtn);
+        if (!awaitingLuckyPick) {
+          const luckyBtn = document.createElement("button");
+          luckyBtn.className = "btn";
+          luckyBtn.style.cssText = "font-size:.82rem;padding:3px 12px;margin-left:4px;background:#f59e0b;color:#fff;border:none";
+          luckyBtn.textContent = "⭐ Geluksbonus gebruiken";
+          luckyBtn.onclick = () => { awaitingLuckyPick = true; render(); };
+          combos.appendChild(luckyBtn);
+        } else {
+          // Rij-kiezer
+          const pickLabel = document.createElement("span");
+          pickLabel.className = "combo for-all";
+          pickLabel.innerHTML = "⭐ Kies een kleurenrij voor je bonuskruis:";
+          combos.appendChild(pickLabel);
+          COLORS.forEach(c => {
+            if (state.rows[c.id].lock !== "open") return;
+            const rb = document.createElement("button");
+            rb.className = "btn";
+            rb.style.cssText = `font-size:.82rem;padding:3px 12px;margin:2px;background:${c.hex};color:#fff;border:none`;
+            rb.textContent = c.name;
+            rb.onclick = () => { awaitingLuckyPick = false; applyLuckyBonusToRow(c.id); };
+            combos.appendChild(rb);
+          });
+          const cancelLucky = document.createElement("button");
+          cancelLucky.className = "btn btn-muted";
+          cancelLucky.style.cssText = "font-size:.82rem;padding:3px 10px;margin-left:6px";
+          cancelLucky.textContent = "Annuleren";
+          cancelLucky.onclick = () => { awaitingLuckyPick = false; render(); };
+          combos.appendChild(cancelLucky);
+        }
       }
       // Sla-over knop
       const skipBtn = document.createElement("button");
@@ -1049,6 +1073,7 @@ function checkTurnReset() {
     currentTurnNumber = roomData?.turnNumber ?? null;
     markedThisTurn    = [];
     madeWhiteDecision = false;
+    awaitingLuckyPick = false;
   }
 }
 
@@ -1117,6 +1142,43 @@ async function applyLuckyBonus() {
   saveState();
   render();
   showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === bestColorId).name}!`);
+  if (currentMode === "solo") soloCheckAndAdvanceWhites();
+}
+
+// Geluksbonus: speler heeft een rij gekozen, markeer het eerstvolgende vakje
+async function applyLuckyBonusToRow(colorId) {
+  if (madeWhiteDecision) { showToast("Je hebt al beslist voor ⚪+⚪."); return; }
+  const row = state.rows[colorId];
+  if (row.lock !== "open") { showToast("Deze rij is al gesloten."); return; }
+
+  const count  = crossedCount(row);
+  const lastP  = latestProg(row);
+  let bestIndex = -1;
+  for (let i = lastP + 1; i < row.cells.length; i++) {
+    if (row.cells[i] === "open") {
+      if (i < 13 || count >= 6) bestIndex = i;
+      break;
+    }
+  }
+  if (bestIndex < 0) { showToast("⭐ Geen beschikbaar vakje in deze rij."); return; }
+
+  checkpoint();
+  for (let i = 0; i < bestIndex; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+  row.cells[bestIndex] = "cross";
+
+  markedThisTurn.push(colorId);
+  madeWhiteDecision = true;
+  if (currentMode === "multi") {
+    set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+  } else if (currentMode === "solo") {
+    soloRoom.whitesDone = soloRoom.whitesDone || {};
+    soloRoom.whitesDone[playerId] = true;
+    soloRoom.players[playerId].state = clone(state);
+    roomData = soloRoom;
+  }
+  saveState();
+  render();
+  showToast(`⭐ Geluksbonus: kruis in ${COLORS.find(c => c.id === colorId).name}!`);
   if (currentMode === "solo") soloCheckAndAdvanceWhites();
 }
 
@@ -1395,6 +1457,7 @@ function setupSoloGame(numBots) {
   currentTurnNumber = 1;
   markedThisTurn    = [];
   madeWhiteDecision = false;
+  awaitingLuckyPick = false;
 
   setupGameScreen(true);
   currentMode = "solo"; // herstel: setupGameScreen zet "multi", maar we hebben "solo" nodig
@@ -1579,6 +1642,7 @@ function soloPassToNext() {
   currentTurnNumber = soloRoom.turnNumber;
   markedThisTurn    = [];
   madeWhiteDecision = false;
+  awaitingLuckyPick = false;
 
   roomData = soloRoom;
   render();
