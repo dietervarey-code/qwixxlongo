@@ -250,7 +250,7 @@
         <span class="badge">Binnenkort</span>
       </button>
     </div>
-    <div id="savedNotice" style="display:none;color:var(--muted);font-size:.85rem;display:flex;gap:8px;align-items:center">
+    <div id="savedNotice" style="display:none;color:var(--muted);font-size:.85rem;gap:8px;align-items:center">
       <span>📂 <b id="savedLabel"></b></span>
       <button class="btn" id="btnResume" style="padding:5px 10px;font-size:.8rem">Doorgaan →</button>
     </div>
@@ -487,62 +487,86 @@ function generateCode() {
 
 async function createRoom() {
   const name = document.getElementById("lobbyName").value.trim() || "Speler";
-  const code = generateCode();
-  state = freshState(name);
-  const playerData = { name, order:0, online:true, state };
-  await set(ref(db, `rooms/${code}`), {
-    hostId:         playerId,
-    status:         "waiting",
-    activePlayerId: null,
-    turnNumber:     0,
-    dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null },
-    globalLocks:    { red:null, yellow:null, green:null, blue:null },
-    players:        { [playerId]: playerData }
-  });
-  roomCode = code;
-  localStorage.setItem(ROOM_KEY, code);
-  setupDisconnect();
-  listenToRoom();
-  navigate("waiting");
+  const btn = document.getElementById("btnCreate");
+  btn.disabled = true; btn.textContent = "Aanmaken…";
+  try {
+    const code = generateCode();
+    state = freshState(name);
+    const playerData = { name, order:0, online:true, state };
+    await set(ref(db, `rooms/${code}`), {
+      hostId:         playerId,
+      status:         "waiting",
+      activePlayerId: null,
+      turnNumber:     0,
+      dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null },
+      globalLocks:    { red:null, yellow:null, green:null, blue:null },
+      players:        { [playerId]: playerData }
+    });
+    roomCode = code;
+    localStorage.setItem(ROOM_KEY, code);
+    setupDisconnect();
+    listenToRoom();
+    navigate("waiting");
+  } catch(e) {
+    console.error("createRoom:", e);
+    showToast("❌ Kamer aanmaken mislukt. Controleer je Firebase-regels (zie README).", 5000);
+  } finally {
+    btn.disabled = false; btn.textContent = "+ Nieuwe kamer aanmaken";
+  }
 }
 
 async function joinRoom() {
   const code = document.getElementById("joinCode").value.trim().toUpperCase();
   const name = document.getElementById("lobbyName").value.trim() || "Speler";
   if (code.length !== 4) { showToast("Voer een geldige 4-lettercode in."); return; }
-  const snap = await get(ref(db, `rooms/${code}`));
-  if (!snap.exists()) { showToast("Kamer niet gevonden. Controleer de code."); return; }
-  const data = snap.val();
-  if (data.status === "ended") { showToast("Dit spel is al afgelopen."); return; }
-  const count = Object.keys(data.players||{}).length;
-  if (count >= 4) { showToast("Kamer is vol (max 4 spelers)."); return; }
-  state = freshState(name);
-  await update(ref(db, `rooms/${code}/players/${playerId}`), { name, order:count, online:true, state });
-  roomCode = code;
-  localStorage.setItem(ROOM_KEY, code);
-  setupDisconnect();
-  listenToRoom();
-  navigate("waiting");
+  const btn = document.getElementById("btnJoin");
+  btn.disabled = true; btn.textContent = "Zoeken…";
+  try {
+    const snap = await get(ref(db, `rooms/${code}`));
+    if (!snap.exists()) { showToast("❌ Kamer niet gevonden. Controleer de code."); return; }
+    const data = snap.val();
+    if (data.status === "ended") { showToast("Dit spel is al afgelopen."); return; }
+    const count = Object.keys(data.players||{}).length;
+    if (count >= 4) { showToast("Kamer is vol (max 4 spelers)."); return; }
+    state = freshState(name);
+    await set(ref(db, `rooms/${code}/players/${playerId}`), { name, order:count, online:true, state });
+    roomCode = code;
+    localStorage.setItem(ROOM_KEY, code);
+    setupDisconnect();
+    listenToRoom();
+    navigate("waiting");
+    if (data.status === "playing") { setupGameScreen(true); navigate("game"); render(); }
+  } catch(e) {
+    console.error("joinRoom:", e);
+    showToast("❌ Verbindingsfout. Controleer je internetverbinding en Firebase-regels.", 5000);
+  } finally {
+    btn.disabled = false; btn.textContent = "Meedoen met deze code →";
+  }
 }
 
 async function reconnectRoom(code) {
-  const snap = await get(ref(db, `rooms/${code}`));
-  if (!snap.exists()) {
-    localStorage.removeItem(ROOM_KEY);
-    showToast("Kamer niet meer beschikbaar.");
-    initHome();
-    return;
+  try {
+    const snap = await get(ref(db, `rooms/${code}`));
+    if (!snap.exists()) {
+      localStorage.removeItem(ROOM_KEY);
+      showToast("Kamer niet meer beschikbaar.");
+      initHome();
+      return;
+    }
+    const data = snap.val();
+    roomCode = code;
+    roomData = data;
+    const myData = data.players?.[playerId];
+    if (myData) state = myData.state;
+    await set(ref(db, `rooms/${code}/players/${playerId}/online`), true);
+    setupDisconnect();
+    listenToRoom();
+    navigate(data.status === "playing" ? "game" : "waiting");
+    if (data.status === "playing") { setupGameScreen(true); render(); }
+  } catch(e) {
+    console.error("reconnectRoom:", e);
+    showToast("Verbindingsfout. Controleer je internetverbinding.");
   }
-  const data = snap.val();
-  roomCode = code;
-  roomData = data;
-  const myData = data.players?.[playerId];
-  if (myData) state = myData.state;
-  await update(ref(db, `rooms/${code}/players/${playerId}/online`), true);
-  setupDisconnect();
-  listenToRoom();
-  navigate(data.status === "playing" ? "game" : "waiting");
-  if (data.status === "playing") { setupGameScreen(true); render(); }
 }
 
 function setupDisconnect() {
@@ -620,9 +644,17 @@ function renderWaiting() {
 }
 
 async function startGame() {
-  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
-  const firstId = players[0][0];
-  await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId });
+  const btn = document.getElementById("btnStartGame");
+  btn.disabled = true; btn.textContent = "Starten…";
+  try {
+    const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+    const firstId = players[0][0];
+    await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1 });
+  } catch(e) {
+    console.error("startGame:", e);
+    showToast("❌ Starten mislukt. Probeer opnieuw.");
+    btn.disabled = false; btn.textContent = "Spel starten →";
+  }
 }
 
 async function leaveRoom() {
@@ -661,13 +693,20 @@ function amIActive() {
 }
 
 async function rollDice() {
-  if (!amIActive()) return;
+  if (!amIActive()) { showToast("Wacht op jouw beurt."); return; }
   if (roomData?.dice?.rolled) { showToast("Dobbelstenen zijn al gegooid."); return; }
-  const roll = () => Math.floor(Math.random()*6)+1;
-  const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
-  // Animatie
-  document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
-  await update(ref(db, `rooms/${roomCode}/dice`), dice);
+  const btn = document.getElementById("btnRoll");
+  btn.disabled = true;
+  try {
+    const roll = () => Math.floor(Math.random()*6)+1;
+    const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
+    document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
+    await set(ref(db, `rooms/${roomCode}/dice`), dice);
+  } catch(e) {
+    console.error("rollDice:", e);
+    showToast("❌ Gooien mislukt. Probeer opnieuw.");
+    btn.disabled = false;
+  }
 }
 
 function renderDice() {
@@ -758,25 +797,33 @@ function renderTurnBar() {
 
 // ── Beurt doorgeven ────────────────────────────────────────────────────────────
 async function passToNext() {
-  if (!amIActive()) return;
-  const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
-  const myIdx   = players.findIndex(([pid])=>pid===playerId);
-  const nextIdx = (myIdx+1) % players.length;
-  const nextId  = players[nextIdx][0];
+  if (!amIActive()) { showToast("Het is jouw beurt niet."); return; }
+  const btn = document.getElementById("passBtn");
+  btn.disabled = true;
+  try {
+    const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
+    const myIdx   = players.findIndex(([pid])=>pid===playerId);
+    const nextIdx = (myIdx+1) % players.length;
+    const nextId  = players[nextIdx][0];
 
-  // Check speleinde
-  const locks = Object.values(roomData.globalLocks||{}).filter(Boolean).length;
-  const anyMaxPenalties = players.some(([,p])=>(p.state?.penalties||[]).filter(Boolean).length>=4);
-  if (locks >= 2 || anyMaxPenalties) {
-    await update(ref(db,`rooms/${roomCode}`), { status:"ended", endReason: locks>=2?"locks":"penalties" });
-    return;
+    // Check speleinde
+    const locks = Object.values(roomData.globalLocks||{}).filter(v=>v!=null).length;
+    const anyMaxPenalties = players.some(([,p])=>(p.state?.penalties||[]).filter(Boolean).length>=4);
+    if (locks >= 2 || anyMaxPenalties) {
+      await update(ref(db,`rooms/${roomCode}`), { status:"ended", endReason: locks>=2?"locks":"penalties" });
+      return;
+    }
+
+    await update(ref(db,`rooms/${roomCode}`), {
+      activePlayerId: nextId,
+      turnNumber:     (roomData.turnNumber||1)+1,
+      dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null }
+    });
+  } catch(e) {
+    console.error("passToNext:", e);
+    showToast("❌ Beurt doorgeven mislukt. Probeer opnieuw.");
+    btn.disabled = false;
   }
-
-  await update(ref(db,`rooms/${roomCode}`), {
-    activePlayerId: nextId,
-    turnNumber:     (roomData.turnNumber||1)+1,
-    dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null }
-  });
 }
 
 function renderEndGame() {
@@ -808,7 +855,7 @@ function markNumber(colorId, index) {
     for(let i=index+1;i<row.cells.length;i++) if(row.cells[i]==="open") row.cells[i]="skip";
     // Broadcast global lock
     if (currentMode==="multi") {
-      update(ref(db,`rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy:playerId });
+      set(ref(db,`rooms/${roomCode}/globalLocks/${colorId}`), { lockedBy:playerId }).catch(console.error);
     }
     showToast("Rij gesloten! Het slot telt mee als extra kruis.");
   }
@@ -830,7 +877,9 @@ function saveState() {
   if (currentMode==="scoreblad") {
     saveScoreblad();
   } else if (currentMode==="multi" && roomCode) {
-    update(ref(db,`rooms/${roomCode}/players/${playerId}/state`), state);
+    set(ref(db,`rooms/${roomCode}/players/${playerId}/state`), state).catch(e=>{
+      console.error("saveState:", e);
+    });
   }
 }
 
@@ -944,7 +993,15 @@ document.getElementById("btnToHome").onclick = () => {
 
 // Startscherm
 document.getElementById("btnScoreblad").onclick = () => startScoreblad(false);
-document.getElementById("btnMulti").onclick      = () => navigate("lobby");
+document.getElementById("btnMulti").onclick      = async () => {
+  // Snel Firebase-verbindingstest
+  try {
+    await get(ref(db, ".info/connected"));
+    navigate("lobby");
+  } catch(e) {
+    showToast("❌ Geen verbinding met Firebase. Controleer je internet of de Firebase-regels.", 5000);
+  }
+};
 document.getElementById("btnLobbyBack").onclick  = () => navigate("home");
 document.getElementById("btnCreate").onclick     = createRoom;
 document.getElementById("btnJoin").onclick       = joinRoom;
