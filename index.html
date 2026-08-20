@@ -414,8 +414,9 @@ let history = [];
 let toastTimer;
 
 // Multiplayer beurt-tracking (reset bij elke nieuwe beurt)
-let currentTurnNumber = null;
-let markedThisTurn    = []; // colorIds die deze beurt aangekruist zijn
+let currentTurnNumber  = null;
+let markedThisTurn     = []; // colorIds die deze beurt aangekruist zijn
+let madeWhiteDecision  = false; // heeft deze speler al beslist over ⚪+⚪ deze beurt?
 
 localStorage.setItem(PLAYER_ID_KEY, playerId);
 
@@ -600,9 +601,16 @@ function listenToRoom() {
       }
 
       // Reset beurtmarkeringen bij nieuwe beurt
-      if (roomData.turnNumber !== currentTurnNumber) {
-        currentTurnNumber = roomData.turnNumber ?? null;
-        markedThisTurn = [];
+      checkTurnReset();
+
+      // Auto-overgang witfase → kleurfase zodra iedereen beslist heeft
+      if (roomData.dicePhase === "whites" && amIActive()) {
+        const allPids  = Object.keys(roomData.players || {});
+        const donePids = Object.keys(roomData.whitesDone || {});
+        if (allPids.length > 0 && allPids.every(pid => donePids.includes(pid))) {
+          update(ref(db, `rooms/${roomCode}`), { dicePhase:"colors" }).catch(console.error);
+          return; // listener vuurt opnieuw na update
+        }
       }
 
       const curScreen = document.querySelector(".screen.active")?.id;
@@ -667,7 +675,7 @@ async function startGame() {
   try {
     const players = Object.entries(roomData.players||{}).sort((a,b)=>a[1].order-b[1].order);
     const firstId = players[0][0];
-    await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1 });
+    await update(ref(db, `rooms/${roomCode}`), { status:"playing", activePlayerId:firstId, turnNumber:1, dicePhase:"rolling" });
   } catch(e) {
     console.error("startGame:", e);
     showToast("❌ Starten mislukt. Probeer opnieuw.");
@@ -712,14 +720,15 @@ function amIActive() {
 
 async function rollDice() {
   if (!amIActive()) { showToast("Wacht op jouw beurt."); return; }
-  if (roomData?.dice?.rolled) { showToast("Dobbelstenen zijn al gegooid."); return; }
+  if (roomData?.dicePhase !== "rolling") { showToast("Dobbelstenen zijn al gegooid."); return; }
   const btn = document.getElementById("btnRoll");
   btn.disabled = true;
   try {
     const roll = () => Math.floor(Math.random()*6)+1;
     const dice = { rolled:true, w1:roll(), w2:roll(), red:roll(), yellow:roll(), green:roll(), blue:roll() };
     document.querySelectorAll(".die").forEach(d=>{ d.classList.add("rolling"); setTimeout(()=>d.classList.remove("rolling"),500); });
-    await set(ref(db, `rooms/${roomCode}/dice`), dice);
+    // Stel dobbelstenen en fase tegelijk in (witfase begint voor iedereen)
+    await update(ref(db, `rooms/${roomCode}`), { dice, dicePhase:"whites" });
   } catch(e) {
     console.error("rollDice:", e);
     showToast("❌ Gooien mislukt. Probeer opnieuw.");
@@ -727,35 +736,46 @@ async function rollDice() {
   }
 }
 
+async function skipWhiteDice() {
+  // Speler slaat ⚪+⚪ over
+  if (roomData?.dicePhase !== "whites") return;
+  if (madeWhiteDecision) return;
+  madeWhiteDecision = true;
+  try {
+    await set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true);
+  } catch(e) {
+    console.error("skipWhiteDice:", e);
+    madeWhiteDecision = false;
+  }
+}
+
 function renderDice() {
   if (currentMode !== "multi" || !roomData) return;
-  const dice = roomData.dice || {};
-  const active = amIActive();
-  const isActive = roomData.activePlayerId === playerId;
-
-  // Label
-  const activePlayer = Object.values(roomData.players||{}).find(p=>p.name) || {};
+  const dice       = roomData.dice || {};
+  const phase      = roomData.dicePhase || "rolling";
+  const isActive   = amIActive();
   const activeName = roomData.players?.[roomData.activePlayerId]?.name || "?";
-  document.getElementById("diceLabel").innerHTML =
-    isActive ? "<b>Jij gooit</b>" : `<b>${activeName}</b> is aan zet`;
+  const allPids    = Object.keys(roomData.players || {});
+  const donePids   = Object.keys(roomData.whitesDone || {});
+  const allDone    = allPids.length > 0 && allPids.every(pid => donePids.includes(pid));
 
-  // Roll button
-  const btn = document.getElementById("btnRoll");
-  btn.disabled = false; // reset na vorige beurt
-  btn.style.display = isActive && !dice.rolled ? "" : "none";
+  // Label bovenaan
+  document.getElementById("diceLabel").innerHTML = isActive
+    ? "<b>Jij bent aan zet</b>"
+    : `<b>${activeName}</b> is aan zet`;
 
-  // Dobbelstenen
+  // Gooi-knop: alleen in "rolling"-fase voor actieve speler
+  const btnRoll = document.getElementById("btnRoll");
+  btnRoll.disabled = false;
+  btnRoll.style.display = (phase === "rolling" && isActive) ? "" : "none";
+
+  // Dobbelstenen tonen
   const diceRow = document.getElementById("diceRow");
   diceRow.innerHTML = "";
-  const DICE = [
-    { key:"w1", cls:"white", label:"⚪" },
-    { key:"w2", cls:"white", label:"⚪" },
-    { key:"red",    cls:"c-red",    label:"🔴" },
-    { key:"yellow", cls:"c-yellow", label:"🟡" },
-    { key:"green",  cls:"c-green",  label:"🟢" },
-    { key:"blue",   cls:"c-blue",   label:"🔵" }
-  ];
-  DICE.forEach(({key,cls}) => {
+  [{ key:"w1",cls:"white"},{ key:"w2",cls:"white"},
+   { key:"red",cls:"c-red"},{ key:"yellow",cls:"c-yellow"},
+   { key:"green",cls:"c-green"},{ key:"blue",cls:"c-blue"}
+  ].forEach(({key,cls}) => {
     const d = document.createElement("div");
     const val = dice[key];
     d.className = `die ${val!=null ? cls : "empty"}`;
@@ -763,20 +783,58 @@ function renderDice() {
     diceRow.appendChild(d);
   });
 
-  // Combinaties
+  // Fase-afhankelijke informatie
   const combos = document.getElementById("combos");
   combos.innerHTML = "";
-  if (dice.rolled) {
-    const w = dice.w1 + dice.w2;
-    addCombo(combos, `⚪+⚪ = ${w}`, "for-all");
-    COLORS.forEach(c => {
-      const v1 = dice.w1 + dice[c.id];
-      const v2 = dice.w2 + dice[c.id];
-      const extra = dice.w1 + dice.w2 + dice[c.id];
-      const vals = v1===v2 ? [v1] : [v1,v2];
-      addCombo(combos, `⚪+${c.name.slice(0,2)}: ${vals.join("/")}`, "for-all");
-      if (isActive) addCombo(combos, `⚪+⚪+${c.name.slice(0,2)}: ${extra}`, "active-extra");
-    });
+
+  if (phase === "rolling") {
+    const msg = isActive
+      ? "Gooi de dobbelstenen om de ronde te starten."
+      : `Wachten op gooi van ${activeName}…`;
+    addCombo(combos, msg, "for-all");
+    return;
+  }
+
+  if (phase === "whites") {
+    const ww = dice.w1 + dice.w2;
+    // Prominent de wit-som tonen
+    const wwEl = document.createElement("span");
+    wwEl.className = "combo for-all";
+    wwEl.innerHTML = `<b>⚪+⚪ = ${ww}</b> — klik dit vakje aan in een kleur, of sla over`;
+    combos.appendChild(wwEl);
+
+    if (madeWhiteDecision) {
+      addCombo(combos, allDone ? "✓ Iedereen klaar — kleurfase start…" : `✓ Jij klaar (${donePids.length}/${allPids.length})`, "for-all");
+    } else {
+      // Sla-over knop
+      const skipBtn = document.createElement("button");
+      skipBtn.className = "btn btn-muted";
+      skipBtn.style.cssText = "font-size:.82rem;padding:3px 10px;margin-left:4px";
+      skipBtn.textContent = "✗ Sla ⚪+⚪ over";
+      skipBtn.onclick = skipWhiteDice;
+      combos.appendChild(skipBtn);
+    }
+    return;
+  }
+
+  if (phase === "colors") {
+    if (isActive) {
+      const colorUsed = markedThisTurn.some(m => m.startsWith("color:"));
+      if (colorUsed) {
+        addCombo(combos, "✓ Kleur aangevinkt. Geef door als je klaar bent.", "for-all");
+      } else {
+        addCombo(combos, "Kies optioneel een kleurcombo, of geef meteen door:", "for-all");
+        COLORS.forEach(c => {
+          const v1 = dice.w1 + dice[c.id], v2 = dice.w2 + dice[c.id];
+          const extra = dice.w1 + dice.w2 + dice[c.id];
+          const vals = v1===v2 ? [v1] : [v1,v2];
+          vals.forEach(v => { if(v>=2&&v<=18) addCombo(combos, `⚪+${c.name}: ${v}`, "for-all"); });
+          if (extra>=2&&extra<=18) addCombo(combos, `⚪+⚪+${c.name}: ${extra}`, "active-extra");
+        });
+      }
+    } else {
+      addCombo(combos, `Wachten op kleurcombo van ${activeName}…`, "for-all");
+    }
   }
 }
 
@@ -817,11 +875,18 @@ function renderTurnBar() {
 // ── Beurt doorgeven ────────────────────────────────────────────────────────────
 async function passToNext() {
   if (!amIActive()) { showToast("Het is jouw beurt niet."); return; }
-  if (!roomData?.dice?.rolled) { showToast("⚠️ Gooi eerst de dobbelstenen."); return; }
+  const phase = roomData?.dicePhase || "rolling";
 
-  // Actieve speler moet iets aanvinken of strafpunt nemen
-  if (markedThisTurn.length === 0) {
-    if (!confirm("Je hebt niets aangevinkt.\nWil je een mislukte worp nemen? (−5 punten)")) return;
+  // Dobbelstenen moeten gegooid zijn
+  if (phase === "rolling") { showToast("⚠️ Gooi eerst de dobbelstenen."); return; }
+
+  // Witfase nog niet afgerond → vraag om sla over te klikken
+  if (phase === "whites") { showToast("⚠️ Wacht tot iedereen ⚪+⚪ beslist heeft, of klik 'Sla over'."); return; }
+
+  // Actieve speler moet iets aangevinkt hebben of een strafpunt nemen
+  const markedAnything = markedThisTurn.length > 0;
+  if (!markedAnything) {
+    if (!confirm("Je hebt niets aangevinkt deze beurt.\nWil je een mislukte worp nemen? (−5 punten)")) return;
     const firstEmpty = state.penalties.findIndex(p => !p);
     if (firstEmpty >= 0) {
       checkpoint();
@@ -847,10 +912,13 @@ async function passToNext() {
       return;
     }
 
+    // Reset naar volgende beurt: nieuwe speler, fase terug naar "rolling", wis witbeslissingen
     await update(ref(db,`rooms/${roomCode}`), {
       activePlayerId: nextId,
       turnNumber:     (roomData.turnNumber||1)+1,
-      dice:           { rolled:false, w1:null, w2:null, red:null, yellow:null, green:null, blue:null }
+      dicePhase:      "rolling",
+      whitesDone:     null,   // verwijdert de node in Firebase
+      dice:           { rolled:false }
     });
   } catch(e) {
     console.error("passToNext:", e);
@@ -874,26 +942,36 @@ function renderEndGame() {
 
 // ── Spelregel-helpers (multiplayer) ──────────────────────────────────────────
 function getValidNumbers(colorId) {
-  // Geeft Set met geldige nummers terug, of null als er geen beperking is (scoreblad-modus)
-  if (currentMode !== "multi" || !roomData?.dice?.rolled) return null;
-  const d = roomData.dice;
-  const valid = new Set();
-  if (amIActive()) {
-    // Actieve speler: ⚪+⚪, ⚪+kleur, ⚪+⚪+kleur
-    [d.w1 + d.w2, d.w1 + d[colorId], d.w2 + d[colorId], d.w1 + d.w2 + d[colorId]]
-      .forEach(v => { if (v >= 2 && v <= 18) valid.add(v); });
-  } else {
-    // Niet-actieve speler: alleen ⚪+⚪
+  // null  → scoreblad-modus, geen beperking
+  // Set   → multiplayer, alleen deze waarden zijn geldig (lege Set = niets geldig)
+  if (currentMode !== "multi") return null;
+  const phase = roomData?.dicePhase || "rolling";
+  const d     = roomData?.dice || {};
+  if (!d.rolled || phase === "rolling") return new Set(); // niets mag nog
+
+  if (phase === "whites") {
+    // Iedereen: alleen ⚪+⚪
     const ww = d.w1 + d.w2;
-    if (ww >= 2 && ww <= 18) valid.add(ww);
+    return new Set(ww >= 2 && ww <= 18 ? [ww] : []);
   }
-  return valid;
+
+  if (phase === "colors") {
+    if (!amIActive()) return new Set(); // niet-actieve speler: niets meer
+    // Actieve speler: ⚪+kleur en ⚪+⚪+kleur (GEEN ⚪+⚪, dat was de witfase)
+    const valid = new Set();
+    [d.w1 + d[colorId], d.w2 + d[colorId], d.w1 + d.w2 + d[colorId]]
+      .forEach(v => { if (v >= 2 && v <= 18) valid.add(v); });
+    return valid;
+  }
+
+  return new Set();
 }
 
 function checkTurnReset() {
   if (roomData?.turnNumber !== currentTurnNumber) {
     currentTurnNumber = roomData?.turnNumber ?? null;
-    markedThisTurn = [];
+    markedThisTurn    = [];
+    madeWhiteDecision = false;
   }
 }
 
@@ -908,42 +986,43 @@ function markNumber(colorId, index) {
 
   // ── Multiplayer spelregelcontrole ──────────────────────────────────────────
   if (currentMode === "multi") {
-    if (!roomData?.dice?.rolled) {
-      showToast("⚠️ Wacht tot de dobbelstenen gegooid zijn.");
-      return;
-    }
     checkTurnReset();
+    const phase  = roomData?.dicePhase || "rolling";
     const color  = COLORS.find(c => c.id === colorId);
     const num    = color.nums[index];
-    const d      = roomData.dice;
+    const d      = roomData?.dice || {};
     const active = amIActive();
 
-    if (active) {
-      // Actieve speler: ⚪+⚪, ⚪+kleur of ⚪+⚪+kleur
-      const validVals = new Set(
-        [d.w1+d.w2, d.w1+d[colorId], d.w2+d[colorId], d.w1+d.w2+d[colorId]]
-          .filter(v => v>=2 && v<=18)
-      );
-      if (!validVals.has(num)) {
-        const list = [...validVals].sort((a,b)=>a-b).join(", ");
-        showToast(`❌ ${num} klopt niet. Geldige waarden voor ${color.name}: ${list}`);
-        return;
-      }
-      if (markedThisTurn.includes(colorId)) {
-        showToast(`Je hebt ${color.name.toLowerCase()} al aangekruist deze beurt.`);
-        return;
-      }
-    } else {
-      // Niet-actieve speler: alleen ⚪+⚪, max 1 kruis
-      if (markedThisTurn.length >= 1) {
-        showToast("Je mag maar 1 vakje aanvinken als het niet jouw beurt is.");
-        return;
+    if (!d.rolled || phase === "rolling") {
+      showToast("⚠️ Wacht tot de dobbelstenen gegooid zijn."); return;
+    }
+
+    if (phase === "whites") {
+      // Iedereen: alleen ⚪+⚪, max 1 beslissing
+      if (madeWhiteDecision) {
+        showToast("Je hebt al beslist voor ⚪+⚪. Wacht op de anderen."); return;
       }
       const ww = d.w1 + d.w2;
       if (num !== ww) {
-        showToast(`❌ Niet jouw beurt. Alleen ⚪+⚪ = ${ww} is geldig.`);
-        return;
+        showToast(`❌ In de witfase mag je alleen ⚪+⚪ = ${ww} aanvinken.`); return;
       }
+    } else if (phase === "colors") {
+      // Alleen actieve speler, met kleurcombinaties
+      if (!active) {
+        showToast("De kleurfase is alleen voor de actieve speler."); return;
+      }
+      if (markedThisTurn.some(m => m.startsWith("color:"))) {
+        showToast("Je hebt al een kleurscore gebruikt deze beurt."); return;
+      }
+      const validVals = new Set(
+        [d.w1+d[colorId], d.w2+d[colorId], d.w1+d.w2+d[colorId]].filter(v=>v>=2&&v<=18)
+      );
+      if (!validVals.has(num)) {
+        const list = [...validVals].sort((a,b)=>a-b).join(", ");
+        showToast(`❌ ${num} klopt niet. Geldige waarden voor ${color.name}: ${list}`); return;
+      }
+    } else {
+      showToast("Onbekende fase, probeer opnieuw."); return;
     }
   }
   // ──────────────────────────────────────────────────────────────────────────
@@ -951,7 +1030,20 @@ function markNumber(colorId, index) {
   checkpoint();
   for(let i=0;i<index;i++) if(row.cells[i]==="open") row.cells[i]="skip";
   row.cells[index]="cross";
-  if (currentMode === "multi") markedThisTurn.push(colorId);
+
+  // Beurt-administratie bijhouden
+  if (currentMode === "multi") {
+    const phase = roomData?.dicePhase || "rolling";
+    if (phase === "whites") {
+      markedThisTurn.push(colorId);
+      if (!madeWhiteDecision) {
+        madeWhiteDecision = true;
+        set(ref(db, `rooms/${roomCode}/whitesDone/${playerId}`), true).catch(console.error);
+      }
+    } else if (phase === "colors") {
+      markedThisTurn.push("color:" + colorId);
+    }
+  }
 
   if (index>=13) {
     row.lock="own";
@@ -1004,24 +1096,24 @@ function renderRows() {
     ext.textContent = row.lock==="external"?"🔒 Extern gesloten":"🔒 Extern sluiten";
     ext.onclick = () => toggleExternalLock(color.id);
     meta.appendChild(ext); head.append(title, meta);
-    const grid = document.createElement("div"); grid.className = "number-grid";
-    const validNums      = getValidNumbers(color.id);
-    const colorMarked    = currentMode === "multi" && markedThisTurn.includes(color.id);
-    const nonActiveMaxed = currentMode === "multi" && !amIActive() && markedThisTurn.length >= 1;
-    const lastProg       = latestProg(row);
+    const grid     = document.createElement("div"); grid.className = "number-grid";
+    const validNums = getValidNumbers(color.id); // null=geen beperking, Set=fase-regels
+    const phase     = roomData?.dicePhase || "rolling";
+    // In kleurfase: al een kleurcombo gebruikt?
+    const colorPhaseUsed = phase === "colors" && markedThisTurn.some(m => m.startsWith("color:"));
+    // In witfase: al beslist?
+    const whiteDone = phase === "whites" && madeWhiteDecision;
+    const lastProg  = latestProg(row);
     color.nums.forEach((num,i)=>{
       const b = document.createElement("button");
       b.className = "num"; b.innerHTML = `<span>${num}</span>`;
       if (row.cells[i]==="cross")  b.classList.add("crossed");
       if (row.cells[i]==="skip")   b.classList.add("skipped");
       if (row.lock!=="open"&&row.cells[i]==="open") b.classList.add("locked-out");
-      // Highlight geldige/ongeldige vakjes in multiplayer
+      // Multiplayer: geldige vakjes oplichten, ongeldige dimmen
       if (validNums !== null && row.cells[i]==="open" && row.lock==="open" && i > lastProg) {
-        if (validNums.has(num) && !colorMarked && !nonActiveMaxed) {
-          b.classList.add("valid-pick");
-        } else {
-          b.classList.add("not-valid");
-        }
+        const isValid = validNums.has(num) && !colorPhaseUsed && !whiteDone;
+        b.classList.add(isValid ? "valid-pick" : "not-valid");
       }
       b.onclick = () => markNumber(color.id, i);
       grid.appendChild(b);
@@ -1060,13 +1152,18 @@ function renderSummary() {
     status.textContent = `${state.penalties.filter(Boolean).length}/4 straf · ${closedRows()}/2 kleuren dicht`;
   }
   document.getElementById("undoBtn").disabled = history.length===0;
-  // Pass-knop alleen actief als jij aan zet bent
+  // Pass-knop: alleen actief in kleurfase voor actieve speler
   if (currentMode==="multi") {
-    const pb = document.getElementById("passBtn");
+    const pb    = document.getElementById("passBtn");
+    const phase = roomData?.dicePhase || "rolling";
     const myTurn = amIActive();
-    pb.disabled = !myTurn;
-    pb.style.opacity = myTurn ? "1" : "0.5";
-    pb.textContent = myTurn ? "Beurt doorgeven →" : "Wacht op actieve speler…";
+    const canPass = myTurn && phase === "colors";
+    pb.disabled = !canPass;
+    pb.style.opacity = canPass ? "1" : "0.5";
+    if (!myTurn)          pb.textContent = "Wacht op actieve speler…";
+    else if (phase === "rolling") pb.textContent = "Gooi eerst de dobbelstenen";
+    else if (phase === "whites")  pb.textContent = "Wachten op witbeslissingen…";
+    else                          pb.textContent = "Beurt doorgeven →";
   }
 }
 
