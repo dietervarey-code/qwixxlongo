@@ -1397,6 +1397,7 @@ function setupSoloGame(numBots) {
   madeWhiteDecision = false;
 
   setupGameScreen(true);
+  currentMode = "solo"; // herstel: setupGameScreen zet "multi", maar we hebben "solo" nodig
   navigate("game");
   render();
   showToast(`🎲 Solo gestart! Jouw geluksgetallen: ⭐${luckyNumbers[playerId].join(" & ")}`, 3500);
