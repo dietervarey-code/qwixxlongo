@@ -188,14 +188,18 @@
         margin-bottom:4px;border-radius:10px;
         align-items:center
       }
-      /* Verberg speler/geluk velden — niet nodig tijdens spel */
-      .player-wrap{display:none}
+      /* Verberg alleen naam — geluksgetallen blijven zichtbaar */
+      .player-wrap{gap:3px}
+      .player-wrap>div:first-child{display:none}
       .score-wrap{align-self:center}
       .score-total strong{font-size:1.4rem}
       .game-status{font-size:.7rem}
       .action-wrap{flex-direction:row;align-self:center;gap:5px}
       .action-wrap .btn{padding:5px 8px;font-size:.76rem}
       .field-label{font-size:.62rem;margin-bottom:3px}
+      .lucky-wrap{gap:4px}
+      .lucky-input{padding:4px 8px 4px 26px;font-size:.8rem}
+      .lucky-star::before{font-size:.85rem;left:7px}
       /* Penalties kleiner */
       .penalties{gap:5px}
       .penalty{width:30px;height:30px;border-radius:7px}
