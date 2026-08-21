@@ -430,17 +430,6 @@ let soloRoom   = null;  // lokale game state voor solo modus
 let soloBotCount = 0;   // aantal bots in huidig solo spel
 let roomUnsubscribe = null;
 
-// Scoreblad-modus
-let state = freshState(); // actief scoreblad (altijd geïnitialiseerd)
-let history = [];
-let toastTimer;
-
-// Multiplayer beurt-tracking (reset bij elke nieuwe beurt)
-let currentTurnNumber  = null;
-let markedThisTurn     = []; // colorIds die deze beurt aangekruist zijn
-let madeWhiteDecision  = false; // heeft deze speler al beslist over ⚪+⚪ deze beurt?
-let awaitingLuckyPick  = false; // wacht op rij-keuze voor geluksbonus
-
 localStorage.setItem(PLAYER_ID_KEY, playerId);
 
 // ── State helpers ─────────────────────────────────────────────────────────────
@@ -452,6 +441,17 @@ const freshState = (name="") => ({
   rows: Object.fromEntries(COLORS.map(c => [c.id, { cells: Array(15).fill("open"), lock:"open" }])),
   penalties: [false,false,false,false]
 });
+
+// Scoreblad-modus
+let state   = freshState(); // altijd geïnitialiseerd zodat solo direct werkt
+let history = [];
+let toastTimer;
+
+// Multiplayer beurt-tracking (reset bij elke nieuwe beurt)
+let currentTurnNumber  = null;
+let markedThisTurn     = []; // colorIds die deze beurt aangekruist zijn
+let madeWhiteDecision  = false; // heeft deze speler al beslist over ⚪+⚪ deze beurt?
+let awaitingLuckyPick  = false; // wacht op rij-keuze voor geluksbonus
 const crossedCount = row => row.cells.filter(v=>v==="cross").length;
 const rowScore     = row => scoreFor(crossedCount(row) + (row.lock==="own"?1:0));
 const totalScore   = ()  => COLORS.reduce((s,c)=>s+rowScore(state.rows[c.id]),0) - state.penalties.filter(Boolean).length*5;
