@@ -1,4 +1,4 @@
-const CACHE_NAME = "qwixx-longo-v3";
+const CACHE_NAME = "qwixx-longo-v4";
 const ASSETS = [
   "./",
   "./index.html",

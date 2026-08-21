@@ -224,6 +224,31 @@
       .panel,.row-card,.bottom-bar{box-shadow:none}
       body{background:#fff}
     }
+
+    /* ── Spelerkaart popup ──────────────────────────────────────────────── */
+    .player-popup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.52);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px}
+    .player-popup{background:var(--card);border-radius:var(--radius);padding:18px;max-width:min(700px,100%);width:100%;max-height:90dvh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+    .player-popup-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+    .player-popup-title{font-size:1.1rem;font-weight:900}
+    .player-popup-close{background:none;border:1px solid #d1d5db;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.9rem;color:var(--muted)}
+    .player-popup-close:hover{background:#f3f4f6}
+    .popup-row-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:8px 12px;margin-bottom:8px}
+    .popup-row-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.85rem;font-weight:700}
+    .popup-number-grid{display:grid;grid-template-columns:repeat(16,minmax(28px,1fr));gap:3px;overflow-x:auto;padding-bottom:2px}
+    .popup-num{aspect-ratio:1/1;min-width:26px;border-radius:6px;border:1.5px solid var(--row-color);background:#fff;color:var(--row-color);font-weight:900;font-size:.7rem;display:flex;align-items:center;justify-content:center;position:relative;user-select:none}
+    .popup-num.crossed{background:var(--row-color);color:#fff}
+    .popup-num.crossed::after{content:"×";position:absolute;font-size:1.1rem;line-height:1;color:#fff;font-weight:900}
+    .popup-num.crossed span{opacity:.28}
+    .popup-num.skipped{opacity:.3;background:#f9fafb;border-color:#e5e7eb}
+    .popup-num.locked-out{opacity:.18;background:#f3f4f6;border-color:#e5e7eb}
+    .popup-num.last-two{border-width:2px;border-style:double}
+    .popup-lock{min-width:26px;aspect-ratio:1/1;border-radius:6px;border:1.5px dashed #9ca3af;background:#f9fafb;font-size:.85rem;display:flex;align-items:center;justify-content:center}
+    .popup-lock.own{background:#111827;border-color:#111827;border-style:solid}
+    .popup-lock.external{background:#6b7280;border-color:#6b7280;border-style:solid}
+    .popup-score-line{display:flex;gap:16px;margin-top:10px;font-size:.88rem;font-weight:700;color:var(--muted);flex-wrap:wrap;align-items:center}
+    .popup-score-line b{color:var(--ink)}
+    .turn-scores span{cursor:pointer;text-decoration:underline dotted;text-underline-offset:2px}
+    .turn-scores span:hover{color:var(--ink)}
   </style>
 </head>
 <body>
@@ -249,7 +274,7 @@
       <button class="mode-card" id="btnSolo">
         <div class="icon">🤖</div>
         <div class="title">Solo vs bots</div>
-        <div class="desc">Speel tegen 2, 3 of 4 slimme bots. Jij gooit — bots beslissen automatisch.</div>
+        <div class="desc">Speel tegen 1, 2 of 3 slimme bots. Jij gooit — bots beslissen automatisch.</div>
       </button>
     </div>
     <div id="savedNotice" style="display:none;color:var(--muted);font-size:.85rem;gap:8px;align-items:center">
@@ -389,6 +414,18 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- ══ SPELERKAART POPUP ══ -->
+<div id="playerPopupOverlay" class="player-popup-overlay" style="display:none">
+  <div class="player-popup" id="playerPopup">
+    <div class="player-popup-header">
+      <div class="player-popup-title" id="popupPlayerName"></div>
+      <button class="player-popup-close" id="btnClosePopup">✕ Sluiten</button>
+    </div>
+    <div id="popupRows"></div>
+    <div id="popupScoreLine" class="popup-score-line"></div>
+  </div>
+</div>
 
 <script type="module">
 // ── Firebase imports ────────────────────────────────────────────────────────
@@ -954,7 +991,7 @@ function renderTurnBar() {
   document.getElementById("turnSub").textContent  = `Ronde ${roomData.turnNumber||1} · ${players.length} spelers`;
   document.getElementById("turnRoomCode").textContent = roomCode;
 
-  // Scores van alle spelers
+  // Scores van alle spelers (klikbaar → spelerkaart popup)
   const scoresEl = document.getElementById("turnScores");
   scoresEl.innerHTML = "";
   players.forEach(([pid, p], i) => {
@@ -963,7 +1000,9 @@ function renderTurnBar() {
     const isMe = pid === playerId;
     const span = document.createElement("span");
     span.className = isMe ? "me" : "";
+    span.title = `Klik om scoreblad van ${p.name} te zien`;
     span.textContent = `${p.name.split(" ")[0]}: ${s}pt`;
+    span.onclick = () => showPlayerCardPopup(pid);
     scoresEl.appendChild(span);
   });
 }
@@ -1444,7 +1483,7 @@ function render() {
 }
 
 // ── Solo modus ────────────────────────────────────────────────────────────────
-const BOT_NAMES = ["Bot Rood 🤖","Bot Blauw 🤖","Bot Groen 🤖","Bot Geel 🤖"];
+const BOT_NAMES = ["Emma","Liam","Sophie","Noah"];
 
 function setupSoloGame(numBots) {
   soloBotCount = numBots;
@@ -1710,6 +1749,74 @@ function scheduleBotActiveTurn(botId) {
   }, 900 + Math.random() * 600);
 }
 
+// ── Spelerkaart popup ─────────────────────────────────────────────────────────
+function showPlayerCardPopup(pid) {
+  const players = roomData?.players || {};
+  const p = players[pid];
+  if (!p || !p.state) { showToast("Scoreblad niet beschikbaar."); return; }
+  const pState = p.state;
+  const isMe   = pid === playerId;
+
+  document.getElementById("popupPlayerName").textContent =
+    p.name + (isMe ? " (jij)" : p.isBot ? " 🤖" : "");
+
+  const rowsEl = document.getElementById("popupRows");
+  rowsEl.innerHTML = "";
+
+  COLORS.forEach(color => {
+    const row = pState.rows?.[color.id];
+    if (!row) return;
+    const marks = crossedCount(row) + (row.lock === "own" ? 1 : 0);
+    const lockTxt = row.lock === "own" ? " · 🔒 Gesloten" : row.lock === "external" ? " · 🔒 Extern" : "";
+
+    const card = document.createElement("div");
+    card.className = "popup-row-card";
+    card.style.setProperty("--row-color", color.hex);
+
+    const head = document.createElement("div");
+    head.className = "popup-row-head";
+    head.innerHTML =
+      `<span class="dot" style="background:${color.hex}"></span>` +
+      `<span>${color.name}${lockTxt}</span>` +
+      `<span style="margin-left:auto;color:var(--muted)">${marks} kruisje${marks===1?"":"s"} · ${rowScore(row)} pt</span>`;
+
+    const grid = document.createElement("div");
+    grid.className = "popup-number-grid";
+    color.nums.forEach((num, i) => {
+      const b = document.createElement("div");
+      b.className = "popup-num";
+      if (i >= 13) b.classList.add("last-two");
+      b.innerHTML = `<span>${num}</span>`;
+      if      (row.cells[i] === "cross") b.classList.add("crossed");
+      else if (row.cells[i] === "skip")  b.classList.add("skipped");
+      else if (row.lock !== "open")      b.classList.add("locked-out");
+      grid.appendChild(b);
+    });
+    const lock = document.createElement("div");
+    lock.className = "popup-lock";
+    lock.textContent = "🔒";
+    if (row.lock === "own")      lock.classList.add("own");
+    if (row.lock === "external") lock.classList.add("external");
+    grid.appendChild(lock);
+
+    card.append(head, grid);
+    rowsEl.appendChild(card);
+  });
+
+  const total = COLORS.reduce((acc, c) =>
+    acc + rowScore(pState.rows?.[c.id] || { cells: [], lock: "open" }), 0
+  ) - (pState.penalties || []).filter(Boolean).length * 5;
+  const pens = (pState.penalties || []).filter(Boolean).length;
+  const lucky = roomData?.luckyNumbers?.[pid];
+  const scoreLine = document.getElementById("popupScoreLine");
+  scoreLine.innerHTML =
+    `Totaal: <b>${total} pt</b>` +
+    ` &nbsp; Straf: <b>${pens}/4</b>` +
+    (lucky ? ` &nbsp; Geluk: <b>⭐ ${lucky.join(" & ")}</b>` : "");
+
+  document.getElementById("playerPopupOverlay").style.display = "flex";
+}
+
 // ── Invoer ────────────────────────────────────────────────────────────────────
 document.getElementById("playerName").addEventListener("input", e => {
   state.playerName = e.target.value; saveState();
@@ -1766,6 +1873,14 @@ document.getElementById("btnJoin").onclick       = joinRoom;
 document.getElementById("joinCode").addEventListener("keydown", e=>{ if(e.key==="Enter") joinRoom(); });
 document.getElementById("btnStartGame").onclick  = startGame;
 document.getElementById("btnLeaveWaiting").onclick = leaveRoom;
+
+// Popup sluiten
+document.getElementById("btnClosePopup").onclick = () => {
+  document.getElementById("playerPopupOverlay").style.display = "none";
+};
+document.getElementById("playerPopupOverlay").addEventListener("click", e => {
+  if (e.target === e.currentTarget) document.getElementById("playerPopupOverlay").style.display = "none";
+});
 
 // Fullscreen (iOS-proof)
 const fsBtn = document.getElementById("fullscreenBtn");
