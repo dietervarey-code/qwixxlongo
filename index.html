@@ -270,9 +270,9 @@
       <input id="soloName" class="name-input" type="text" placeholder="Naam" maxlength="20" autocomplete="off" style="margin-bottom:18px">
       <span class="field-label">Hoeveel bots?</span>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;width:100%">
+        <button class="btn btn-primary" id="btnSolo1">1 bot</button>
         <button class="btn btn-primary" id="btnSolo2">2 bots</button>
         <button class="btn btn-primary" id="btnSolo3">3 bots</button>
-        <button class="btn btn-primary" id="btnSolo4">4 bots</button>
       </div>
       <p style="color:var(--muted);font-size:.8rem;margin-top:12px;text-align:center">Bots krijgen willekeurige geluksgetallen — net als jij.</p>
     </div>
@@ -431,7 +431,7 @@ let soloBotCount = 0;   // aantal bots in huidig solo spel
 let roomUnsubscribe = null;
 
 // Scoreblad-modus
-let state;             // actief scoreblad
+let state = freshState(); // actief scoreblad (altijd geïnitialiseerd)
 let history = [];
 let toastTimer;
 
@@ -1422,7 +1422,21 @@ function renderSummary() {
   }
 }
 
+// Verwerk bot-sluitingen: pas globalLocks van soloRoom toe op menselijke speler
+function applySoloGlobalLocks() {
+  if (currentMode !== "solo" || !soloRoom?.globalLocks) return;
+  COLORS.forEach(c => {
+    const lock = soloRoom.globalLocks[c.id];
+    if (lock && lock.lockedBy && lock.lockedBy !== playerId) {
+      if (state?.rows[c.id]?.lock === "open") {
+        state.rows[c.id].lock = "external";
+      }
+    }
+  });
+}
+
 function render() {
+  applySoloGlobalLocks();
   renderRows();
   renderPenalties();
   renderSummary();
@@ -1743,9 +1757,9 @@ document.getElementById("btnSolo").onclick  = () => {
   navigate("solo");
 };
 document.getElementById("btnSoloBack").onclick = () => navigate("home");
+document.getElementById("btnSolo1").onclick = () => setupSoloGame(1);
 document.getElementById("btnSolo2").onclick = () => setupSoloGame(2);
 document.getElementById("btnSolo3").onclick = () => setupSoloGame(3);
-document.getElementById("btnSolo4").onclick = () => setupSoloGame(4);
 document.getElementById("btnLobbyBack").onclick  = () => navigate("home");
 document.getElementById("btnCreate").onclick     = createRoom;
 document.getElementById("btnJoin").onclick       = joinRoom;
