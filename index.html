@@ -489,6 +489,7 @@ let currentTurnNumber  = null;
 let markedThisTurn     = []; // colorIds die deze beurt aangekruist zijn
 let madeWhiteDecision  = false; // heeft deze speler al beslist over ⚪+⚪ deze beurt?
 let awaitingLuckyPick  = false; // wacht op rij-keuze voor geluksbonus
+let botActiveMarkedInWhites = false; // bijhouden of actieve bot in witfase iets heeft aangekruist
 const crossedCount = row => row.cells.filter(v=>v==="cross").length;
 const rowScore     = row => scoreFor(crossedCount(row) + (row.lock==="own"?1:0));
 const totalScore   = ()  => COLORS.reduce((s,c)=>s+rowScore(state.rows[c.id]),0) - state.penalties.filter(Boolean).length*5;
@@ -1550,43 +1551,49 @@ function scheduleBotWhitesDecisions() {
   });
 }
 
-// Bot beslist over de witsom
+// Bot beslist over de witsom — geeft true terug als iets gemarkeerd is
 function botDecideWhites(botId) {
   const d = soloRoom.dice;
   const ww = d.w1 + d.w2;
   const botState = soloRoom.players[botId].state;
   const lucky = soloRoom.luckyNumbers?.[botId] || [];
+  let marked = false;
 
   // Lucky number: 55% kans om geluksbonus te gebruiken
   if (lucky.includes(ww) && Math.random() < 0.55) {
     botApplyLuckyBonusInternal(botId, botState);
     soloRoom.whitesDone[botId] = true;
-    return;
+    marked = true;
+  } else {
+    // Probeer de witsom te plaatsen in een beschikbare rij
+    const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
+    for (const color of shuffled) {
+      const row = botState.rows[color.id];
+      if (row.lock !== "open") continue;
+      const numIdx = color.nums.indexOf(ww);
+      if (numIdx < 0) continue;
+      if (numIdx <= latestProg(row)) continue;
+      if (numIdx >= 13 && crossedCount(row) < 6) continue;
+      // Niet te veel cellen overslaan (max 4 tenzij lucky shot)
+      const skips = numIdx - latestProg(row) - 1;
+      if (skips > 4 && Math.random() > 0.25) continue;
+      // Markeer het vakje
+      for (let i = 0; i < numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+      row.cells[numIdx] = "cross";
+      if (numIdx >= 13) {
+        row.lock = "own";
+        for (let i = numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+        soloRoom.globalLocks[color.id] = { lockedBy: botId };
+      }
+      marked = true;
+      break;
+    }
+    soloRoom.whitesDone[botId] = true;
   }
 
-  // Probeer de witsom te plaatsen in een beschikbare rij
-  const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
-  for (const color of shuffled) {
-    const row = botState.rows[color.id];
-    if (row.lock !== "open") continue;
-    const numIdx = color.nums.indexOf(ww);
-    if (numIdx < 0) continue;
-    if (numIdx <= latestProg(row)) continue;
-    if (numIdx >= 13 && crossedCount(row) < 6) continue;
-    // Niet te veel cellen overslaan (max 4 tenzij lucky shot)
-    const skips = numIdx - latestProg(row) - 1;
-    if (skips > 4 && Math.random() > 0.25) continue;
-    // Markeer het vakje
-    for (let i = 0; i < numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
-    row.cells[numIdx] = "cross";
-    if (numIdx >= 13) {
-      row.lock = "own";
-      for (let i = numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
-      soloRoom.globalLocks[color.id] = { lockedBy: botId };
-    }
-    break;
-  }
-  soloRoom.whitesDone[botId] = true;
+  // Bijhouden of de actieve bot in de witfase iets heeft aangekruist
+  if (botId === soloRoom.activePlayerId) botActiveMarkedInWhites = marked;
+  return marked;
 }
 
 // Geluksbonus voor een bot (intern)
@@ -1617,7 +1624,7 @@ function botApplyLuckyBonusInternal(botId, botState) {
   }
 }
 
-// Bot beslist over de kleurfase (actieve bot)
+// Bot beslist over de kleurfase (actieve bot) — geeft true terug als iets gemarkeerd is
 function botDecideColors(botId) {
   const d = soloRoom.dice;
   const botState = soloRoom.players[botId].state;
@@ -1635,7 +1642,7 @@ function botDecideColors(botId) {
       options.push({ colorId: c.id, numIdx, skips });
     });
   });
-  if (!options.length) return; // bot slaat kleur over
+  if (!options.length) return false; // bot slaat kleur over
   // Voorkeur: minst cellen overslaan
   options.sort((a,b) => a.skips - b.skips);
   const pick = options[0];
@@ -1646,8 +1653,9 @@ function botDecideColors(botId) {
     row.lock = "own";
     for (let i = pick.numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
     soloRoom.globalLocks[pick.colorId] = { lockedBy: botId };
-    showToast(`🤖 ${soloRoom.players[botId].name.split(" ")[0]} sluit ${COLORS.find(c=>c.id===pick.colorId).name}!`);
+    showToast(`🔒 ${soloRoom.players[botId].name.split(" ")[0]} sluit ${COLORS.find(c=>c.id===pick.colorId).name}!`);
   }
+  return true;
 }
 
 // Controleer of alle spelers in witfase beslist hebben
@@ -1671,7 +1679,16 @@ function soloAdvanceToColors() {
     // Bot beslist kleurfase na korte pauze
     setTimeout(() => {
       if (currentMode !== "solo" || soloRoom.dicePhase !== "colors") return;
-      botDecideColors(activeId);
+      const colorMarked = botDecideColors(activeId);
+      // Strafpunt als bot niets heeft aangevinkt in deze gehele beurt (wit + kleur)
+      if (!colorMarked && !botActiveMarkedInWhites) {
+        const botState = soloRoom.players[activeId].state;
+        const firstEmpty = botState.penalties.findIndex(p => !p);
+        if (firstEmpty >= 0) {
+          botState.penalties[firstEmpty] = true;
+          showToast(`😬 ${soloRoom.players[activeId].name} gooit mis — strafpunt! (${firstEmpty + 1}/4)`, 3000);
+        }
+      }
       roomData = soloRoom;
       render();
       setTimeout(() => soloPassToNext(), 500);
@@ -1724,6 +1741,7 @@ function soloPassToNext() {
 
 // Bot is actieve speler: gooit dobbelstenen en speelt volledige beurt
 function scheduleBotActiveTurn(botId) {
+  botActiveMarkedInWhites = false; // reset voor deze beurt
   // Stap 1: Bot gooit dobbelstenen
   setTimeout(() => {
     if (currentMode !== "solo" || soloRoom.status !== "playing") return;
