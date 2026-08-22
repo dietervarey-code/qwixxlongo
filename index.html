@@ -1294,8 +1294,13 @@ function markNumber(colorId, index) {
   row.cells[index]="cross";
 
   // Beurt-administratie bijhouden
+  // Vastleggen VOOR de Firebase-schrijfoperaties: Firebase kan onValue-callbacks
+  // synchroon triggeren bij lokale cache-updates, waardoor roomData.dicePhase
+  // al "colors" kan zijn tegen de tijd dat we de auto-pass check bereiken.
+  let markedPhase = null;
   if (currentMode === "multi" || currentMode === "solo") {
     const phase = roomData?.dicePhase || "rolling";
+    markedPhase = phase; // vastleggen vóór eventuele synchrone Firebase-updates
     if (phase === "whites") {
       markedThisTurn.push(colorId);
       if (!madeWhiteDecision) {
@@ -1336,7 +1341,10 @@ function markNumber(colorId, index) {
     } else if (phase === "colors" && amIActive()) {
       setTimeout(() => passToNext(), 350);
     }
-  } else if (currentMode === "multi" && roomData?.dicePhase === "colors" && amIActive()) {
+  } else if (currentMode === "multi" && markedPhase === "colors" && amIActive()) {
+    // Gebruik markedPhase (vastgelegd vóór Firebase-schrijven) zodat een
+    // synchrone onValue-callback die dicePhase naar "colors" stuurt niet
+    // een valse auto-pass triggert nadat de speler alleen de witfase heeft afgehandeld.
     setTimeout(() => passToNext(), 350);
   }
 }
