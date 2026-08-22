@@ -1565,28 +1565,37 @@ function botDecideWhites(botId) {
     soloRoom.whitesDone[botId] = true;
     marked = true;
   } else {
-    // Probeer de witsom te plaatsen in een beschikbare rij
-    const shuffled = [...COLORS].sort(() => Math.random() - 0.5);
-    for (const color of shuffled) {
+    // Verzamel alle geldige opties met hun skip-kosten en kies de beste
+    const options = [];
+    COLORS.forEach(color => {
       const row = botState.rows[color.id];
-      if (row.lock !== "open") continue;
+      if (row.lock !== "open") return;
       const numIdx = color.nums.indexOf(ww);
-      if (numIdx < 0) continue;
-      if (numIdx <= latestProg(row)) continue;
-      if (numIdx >= 13 && crossedCount(row) < 6) continue;
-      // Niet te veel cellen overslaan (max 4 tenzij lucky shot)
+      if (numIdx < 0) return;
+      if (numIdx <= latestProg(row)) return;
+      if (numIdx >= 13 && crossedCount(row) < 6) return;
       const skips = numIdx - latestProg(row) - 1;
-      if (skips > 4 && Math.random() > 0.25) continue;
-      // Markeer het vakje
-      for (let i = 0; i < numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
-      row.cells[numIdx] = "cross";
-      if (numIdx >= 13) {
-        row.lock = "own";
-        for (let i = numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
-        soloRoom.globalLocks[color.id] = { lockedBy: botId };
+      options.push({ color, numIdx, skips });
+    });
+
+    if (options.length > 0) {
+      // Kies de optie met de minste overgeslagen vakjes (bij gelijkspel: willekeurig)
+      options.sort((a, b) => a.skips - b.skips || Math.random() - 0.5);
+      const best = options[0];
+      // Hoe meer vakjes overslaan, hoe minder kans om te markeren — bots passen soms bewust
+      const markChance = [0.95, 0.82, 0.60, 0.35, 0.15][Math.min(best.skips, 4)] ?? 0.05;
+      if (Math.random() < markChance) {
+        const row = botState.rows[best.color.id];
+        for (let i = 0; i < best.numIdx; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+        row.cells[best.numIdx] = "cross";
+        if (best.numIdx >= 13) {
+          row.lock = "own";
+          for (let i = best.numIdx + 1; i < row.cells.length; i++) if (row.cells[i] === "open") row.cells[i] = "skip";
+          soloRoom.globalLocks[best.color.id] = { lockedBy: botId };
+        }
+        marked = true;
       }
-      marked = true;
-      break;
+      // marked blijft false → bot past bewust (geen straf, want niet-actieve spelers hoeven niets)
     }
     soloRoom.whitesDone[botId] = true;
   }
